@@ -194,6 +194,7 @@
 
         .summary-card.positive {
             background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
         }
 
         .summary-card.negative {
@@ -236,16 +237,9 @@
             color: #2c3e50;
         }
 
-        .chart-placeholder {
+        .chart-canvas {
             height: 300px;
-            background: #f8f9fa;
-            border: 2px dashed #dee2e6;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #6c757d;
-            font-style: italic;
+            width: 100%;
         }
 
         .table-container {
@@ -420,7 +414,7 @@
                     <div class="card-value" id="total-revenue">---万円</div>
                     <div class="card-detail">4事業部統合</div>
                 </div>
-                <div class="summary-card" id="profit-card">
+                <div class="summary-card positive">
                     <div class="card-label">営業利益</div>
                     <div class="card-value" id="total-profit">---万円</div>
                     <div class="card-detail">営業利益率 <span id="profit-rate">---%</span></div>
@@ -440,10 +434,7 @@
             <!-- 月次推移グラフ -->
             <div class="chart-container">
                 <div class="chart-title">月次営業利益推移（事業部別）</div>
-                <div class="chart-placeholder">
-                    グラフ表示エリア<br>
-                    （Chart.js等のライブラリで実装予定）
-                </div>
+                <canvas id="profit-chart" class="chart-canvas"></canvas>
             </div>
 
             <!-- 事業部別・月次詳細テーブル -->
@@ -456,6 +447,7 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.9.1/chart.min.js"></script>
     <script>
         // 事業部合計PLシステム（データ整合性・自動更新機能付き）
         
@@ -510,7 +502,117 @@
             };
         }
 
-        // 個別事業部データ読み込み
+        // グラフ表示機能
+        let profitChart = null;
+
+        function createProfitChart(departments, totalData) {
+            const ctx = document.getElementById('profit-chart');
+            if (!ctx) return;
+
+            // 既存グラフを破棄
+            if (profitChart) {
+                profitChart.destroy();
+            }
+
+            const datasets = [];
+
+            // 各事業部のデータセット
+            const deptColors = {
+                sr: { bg: 'rgba(231, 76, 60, 0.2)', border: '#e74c3c' },
+                w: { bg: 'rgba(52, 152, 219, 0.2)', border: '#3498db' },
+                rc: { bg: 'rgba(39, 174, 96, 0.2)', border: '#27ae60' },
+                rcd: { bg: 'rgba(155, 89, 182, 0.2)', border: '#9b59b6' }
+            };
+
+            const deptNames = {
+                sr: 'SR事業部',
+                w: 'W事業部', 
+                rc: 'RC卸事業部',
+                rcd: 'RCD社事業部'
+            };
+
+            // 各事業部のライン
+            Object.keys(deptColors).forEach(dept => {
+                if (departments[dept] && departments[dept].isValid) {
+                    datasets.push({
+                        label: deptNames[dept],
+                        data: departments[dept].profit,
+                        backgroundColor: deptColors[dept].bg,
+                        borderColor: deptColors[dept].border,
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    });
+                }
+            });
+
+            // 合計ライン（太線）
+            datasets.push({
+                label: '合計営業利益',
+                data: totalData.profit,
+                backgroundColor: 'rgba(52, 73, 94, 0.1)',
+                borderColor: '#34495e',
+                borderWidth: 3,
+                tension: 0.4,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#34495e'
+            });
+
+            profitChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + '万円';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + '万円';
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        }
         function loadDepartmentData(salesKey, settingsKey, deptName) {
             try {
                 const salesData = localStorage.getItem(salesKey);
@@ -769,6 +871,7 @@
             
             updateSummaryCards(totalData);
             generateDetailTable(departments, totalData);
+            createProfitChart(departments, totalData);
             
             console.log('ダッシュボード更新完了', totalData);
         }
