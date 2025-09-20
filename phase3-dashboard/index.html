@@ -560,18 +560,16 @@
                 }
             });
 
-            // 合計ライン（太線）
+            // 合計を棒グラフ（右軸）として追加
             if (totalData && totalData.profit) {
                 datasets.push({
                     label: '合計営業利益',
                     data: totalData.profit,
-                    backgroundColor: 'rgba(52, 73, 94, 0.1)',
+                    type: 'bar',
+                    backgroundColor: 'rgba(52, 73, 94, 0.3)',
                     borderColor: '#34495e',
-                    borderWidth: 3,
-                    tension: 0.4,
-                    pointRadius: 5,
-                    pointHoverRadius: 8,
-                    pointBackgroundColor: '#34495e'
+                    borderWidth: 1,
+                    yAxisID: 'y1'
                 });
             }
 
@@ -616,9 +614,34 @@
                         },
                         scales: {
                             y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
                                 beginAtZero: false,
+                                title: {
+                                    display: true,
+                                    text: '事業部営業利益（万円）'
+                                },
                                 grid: {
                                     color: 'rgba(0, 0, 0, 0.1)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString() + '万円';
+                                    }
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                beginAtZero: false,
+                                title: {
+                                    display: true,
+                                    text: '合計営業利益（万円）'
+                                },
+                                grid: {
+                                    drawOnChartArea: false,
                                 },
                                 ticks: {
                                     callback: function(value) {
