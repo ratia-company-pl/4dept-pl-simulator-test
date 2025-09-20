@@ -406,15 +406,12 @@
             </tr>
             <tr>
                 <td style="padding: 8px 20px;">
-                    <div class="system-buttons">
-                        <button class="system-btn active" onclick="showSystem('input')">
-                            システム1: 事業部詳細売上入力
-                        </button>
-                        <button class="system-btn" onclick="showSystem('display')">
-                            システム2: 事業部別PL表示システム
-                        </button>
-                        <button class="system-btn" onclick="showSystem('dashboard')">
-                            システム3: 事業部合計PLシステム
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <a href="index.html" style="background: linear-gradient(135deg, #34495e, #2c3e50); color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600;">
+                            メインメニューに戻る
+                        </a>
+                        <button onclick="sendAllDataAndNavigateToPL()" style="background: linear-gradient(135deg, #f39c12, #e67e22); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                            一括送信・事業部合計PL確認
                         </button>
                     </div>
                 </td>
@@ -422,8 +419,8 @@
         </table>
         
         <!-- システム1: 事業部詳細売上入力 -->
-        <div id="input-system" class="system-content active">
-            <h2 style="margin-bottom: 15px; color: #2d3748; font-size: 1.1rem;">システム1: 4事業部売上入力</h2>
+        <div class="system-content active">
+            <h2 style="margin-bottom: 15px; color: #2d3748; font-size: 1.1rem;">4事業部売上入力システム</h2>
             
             <!-- 連携状態表示 -->
             <div id="linkage-status" class="linkage-status warning">
@@ -657,70 +654,7 @@
                 <div class="progress-bar">
                     <div class="progress-fill" style="width: 100%;"></div>
                 </div>
-                <p>完成度: 100% - integrated_pl_engine.tsx完全移植完了・全事業部連携機能実装済み</p>
-            </div>
-        </div>
-        
-        <!-- システム2: 事業部別PL表示システム -->
-        <div id="display-system" class="system-content">
-            <h2 style="margin-bottom: 25px; color: #2d3748;">システム2: 事業部別PL表示システム</h2>
-            
-            <div id="pl-display">
-                <p style="color: #718096; text-align: center; margin: 40px 0;">
-                    入力データを基にした事業部別PL計算結果がここに表示されます。<br>
-                    （PL計算機能は次の開発フェーズで実装予定）
-                </p>
-            </div>
-            
-            <div class="progress-indicator">
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 15%;"></div>
-                </div>
-                <p>完成度: 15% - 基本構造のみ実装</p>
-            </div>
-        </div>
-        
-        <!-- システム3: 事業部合計PLシステム -->
-        <div id="dashboard-system" class="system-content">
-            <h2 style="margin-bottom: 25px; color: #2d3748;">システム3: 事業部合計PLシステム</h2>
-            
-            <div class="results-grid" id="dashboard-results">
-                <div class="result-card">
-                    <div class="result-label">統合売上高</div>
-                    <div class="result-value" id="total-revenue">0万円</div>
-                </div>
-                <div class="result-card">
-                    <div class="result-label">SR事業部</div>
-                    <div class="result-value" id="sr-total">0万円</div>
-                </div>
-                <div class="result-card">
-                    <div class="result-label">W事業部</div>
-                    <div class="result-value" id="w-total">0万円</div>
-                </div>
-                <div class="result-card">
-                    <div class="result-label">RC卸事業部</div>
-                    <div class="result-value" id="rc-total">0万円</div>
-                </div>
-                <div class="result-card">
-                    <div class="result-label">RCD社事業部</div>
-                    <div class="result-value" id="rcd-total">0万円</div>
-                </div>
-                <div class="result-card">
-                    <div class="result-label">前年増減</div>
-                    <div class="result-value" id="total-diff">+0万円</div>
-                </div>
-            </div>
-            
-            <div class="export-section">
-                <button class="export-btn" onclick="exportToURL()">URLパラメータでエクスポート</button>
-                <button class="export-btn" onclick="exportToJSON()">JSON形式でエクスポート</button>
-            </div>
-            
-            <div class="progress-indicator">
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 60%;"></div>
-                </div>
-                <p>完成度: 60% - 基本表示・エクスポート機能実装済み</p>
+                <p>完成度: 100% - integrated_pl_engine.tsx完全移植完了・全事業部連携機能実装済み・一括送信機能追加</p>
             </div>
         </div>
     </div>
@@ -776,19 +710,33 @@
             }
         };
 
-        // システム切り替え
-        function showSystem(systemType) {
-            // ボタンのアクティブ状態を更新
-            document.querySelectorAll('.system-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            // コンテンツの表示を切り替え
-            document.querySelectorAll('.system-content').forEach(content => content.classList.remove('active'));
-            document.getElementById(systemType + '-system').classList.add('active');
-            
-            // システム表示時に更新
-            if (systemType === 'dashboard') {
-                updateDashboard();
+        // 一括送信・事業部合計PL確認機能
+        function sendAllDataAndNavigateToPL() {
+            try {
+                // 4事業部のデータを一括送信
+                sendSRDataToPLSystem();
+                sendWDataToPLSystem(); 
+                sendRCDataToPLSystem();
+                sendRCDDataToPLSystem();
+                
+                // 一括送信完了フラグを設定
+                localStorage.setItem('all_data_sync_flag', JSON.stringify({
+                    timestamp: new Date().toISOString(),
+                    status: 'completed'
+                }));
+                
+                updateLinkageStatus('success', '✅ 全事業部データを一括送信しました');
+                
+                // 事業部合計PLページへ遷移
+                setTimeout(() => {
+                    window.location.href = 'phase3-dashboard/';
+                }, 1000);
+                
+                alert('全事業部データを事業部合計PLに送信しました！\n\n1秒後に事業部合計PLページに移動します。');
+                
+            } catch (error) {
+                updateLinkageStatus('error', '❌ 一括送信に失敗しました');
+                alert('一括送信に失敗しました: ' + error.message);
             }
         }
 
