@@ -522,8 +522,7 @@
 
                 <!-- W専用データ送信ボタン -->
                 <div style="margin-top: 20px; text-align: center;">
-                    <button class="export-btn w-send" onclick="sendWDataToPLSystem()" 
-                            style="background: linear-gradient(135deg, #3182ce, #2c5aa0);">
+                    <button class="export-btn w-send" onclick="sendWDataToPLSystem()">
                         WデータをPLシステムに送信
                     </button>
                 </div>
@@ -1087,6 +1086,200 @@
             generateRCDTable();
         }
 
+        function updateRCDFee(monthIndex, value) {
+            currentData.rcd.fees[monthIndex] = parseInt(value) || 0;
+            calculateRCD();
+            generateRCDTable();
+        }
+
+        // 計算関数群（修正版）
+        function calculateSR() {
+            // 変数をデータに同期
+            currentData.sr.variables.commission = parseInt(document.getElementById('sr-commission').value) || 0;
+            currentData.sr.variables.bonus6 = parseInt(document.getElementById('sr-bonus6').value) || 0;
+            currentData.sr.variables.bonus12 = parseInt(document.getElementById('sr-bonus12').value) || 0;
+            currentData.sr.variables.advertising = parseInt(document.getElementById('sr-advertising').value) || 0;
+
+            const totals = months.map((_, i) => {
+                return Object.values(currentData.sr.stores).reduce((sum, store) => sum + store[i], 0);
+            });
+            const annual = totals.reduce((sum, val) => sum + val, 0);
+            const refTotal = referenceData.SR.reduce((sum, val) => sum + val, 0);
+            const diff = annual - refTotal;
+
+            document.getElementById('sr-annual').textContent = 
+                `年間合計: ${formatNumber(annual)}万円　前年増減: ${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円`;
+            
+            updateDashboard();
+        }
+
+        function calculateW() {
+            // 変数をデータに同期（修正：HTML要素から値を取得）
+            const advertisingElement = document.getElementById('w-advertising');
+            if (advertisingElement) {
+                currentData.w.variables.advertising = parseInt(advertisingElement.value) || 0;
+            }
+
+            const annual = currentData.w.sales.reduce((sum, val) => sum + val, 0);
+            const refTotal = referenceData.W.reduce((sum, val) => sum + val, 0);
+            const diff = annual - refTotal;
+
+            document.getElementById('w-annual').textContent = 
+                `年間合計: ${formatNumber(annual)}万円　前年増減: ${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円`;
+            
+            updateDashboard();
+        }
+
+        function calculateRC() {
+            // 変数をデータに同期
+            const advertisingElement = document.getElementById('rc-advertising');
+            const exhibitionElement = document.getElementById('rc-exhibition');
+            if (advertisingElement) {
+                currentData.rc.variables.advertising = parseInt(advertisingElement.value) || 0;
+            }
+            if (exhibitionElement) {
+                currentData.rc.variables.exhibition = parseInt(exhibitionElement.value) || 0;
+            }
+
+            const totals = currentData.rc.variations.map(variation => currentData.rc.baseSales + variation);
+            const annual = totals.reduce((sum, val) => sum + val, 0);
+            const refTotal = referenceData.RC.reduce((sum, val) => sum + val, 0);
+            const diff = annual - refTotal;
+
+            document.getElementById('rc-annual').textContent = 
+                `年間合計: ${formatNumber(annual)}万円　前年増減: ${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円`;
+            
+            updateDashboard();
+        }
+
+        function calculateRCD() {
+            const totals = currentData.rcd.purchases.map(purchase => Math.round(purchase * 2000 * 1.03));
+            const annual = totals.reduce((sum, val) => sum + val, 0);
+            const refTotal = referenceData.RCD.reduce((sum, val) => sum + val, 0);
+            const diff = annual - refTotal;
+
+            document.getElementById('rcd-annual').textContent = 
+                `年間合計: ${formatNumber(annual)}万円　前年増減: ${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円`;
+            
+            updateDashboard();
+        }
+
+        // プリセット関数群（修正版）
+        function applySRPreset(presetType) {
+            const storeNames = Object.keys(currentData.sr.stores);
+            storeNames.forEach(storeName => {
+                for (let i = 0; i < 12; i++) {
+                    switch(presetType) {
+                        case 'actual':
+                            const storeIndex = storeNames.indexOf(storeName);
+                            const storeData = [
+                                [416, 397, 421, 502, 471, 544, 567, 476, 355, 408, 299, 346],
+                                [369, 386, 600, 535, 285, 437, 351, 270, 369, 391, 256, 242],
+                                [284, 375, 508, 278, 394, 394, 377, 309, 248, 469, 448, 535],
+                                [328, 547, 723, 520, 528, 607, 574, 318, 714, 657, 700, 600],
+                                [349, 719, 247, 433, 308, 265, 516, 311, 222, 293, 272, 379],
+                                [490, 493, 427, 542, 558, 416, 622, 641, 496, 385, 253, 620]
+                            ];
+                            currentData.sr.stores[storeName][i] = storeData[storeIndex][i];
+                            break;
+                        case '50p':
+                            currentData.sr.stores[storeName][i] += 50;
+                            break;
+                        case '100p':
+                            currentData.sr.stores[storeName][i] += 100;
+                            break;
+                        case '150p':
+                            currentData.sr.stores[storeName][i] += 150;
+                            break;
+                    }
+                }
+            });
+            calculateSR();
+            generateSRTable();
+        }
+
+        function applyWPreset(presetType) {
+            for (let i = 0; i < 12; i++) {
+                switch(presetType) {
+                    case 'actual':
+                        currentData.w.sales[i] = referenceData.W[i];
+                        break;
+                    case '200':
+                        currentData.w.sales[i] = referenceData.W[i] + 200;
+                        break;
+                    case '400':
+                        currentData.w.sales[i] = referenceData.W[i] + 400;
+                        break;
+                    case '600':
+                        currentData.w.sales[i] = referenceData.W[i] + 600;
+                        break;
+                }
+            }
+            calculateW();
+            generateWTable();
+        }
+
+        function applyRCPreset(presetType) {
+            switch(presetType) {
+                case 'standard':
+                    currentData.rc.variations = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                    currentData.rc.targetRate = 0;
+                    break;
+                case 'actual':
+                    currentData.rc.variations = referenceData.RC.map(ref => ref - currentData.rc.baseSales);
+                    currentData.rc.targetRate = 0;
+                    break;
+                case 'growth':
+                    currentData.rc.variations = referenceData.RC.map(ref => {
+                        const targetSales = Math.round(ref * 1.04);
+                        return targetSales - currentData.rc.baseSales;
+                    });
+                    currentData.rc.targetRate = 4;
+                    break;
+                case 'improvement':
+                    currentData.rc.variations = referenceData.RC.map(ref => {
+                        const targetSales = Math.round(ref * 1.07);
+                        return targetSales - currentData.rc.baseSales;
+                    });
+                    currentData.rc.targetRate = 7;
+                    break;
+            }
+            document.getElementById('rc-target-rate').value = currentData.rc.targetRate;
+            document.getElementById('rc-current-rate').textContent = currentData.rc.targetRate;
+            calculateRC();
+            generateRCTable();
+        }
+
+        function applyRCDPreset(presetType) {
+            switch(presetType) {
+                case 'zero':
+                    currentData.rcd.purchases = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                    currentData.rcd.fees = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                    break;
+                case 'actual':
+                    currentData.rcd.purchases = referenceData.RCD.map(refSales => {
+                        const purchaseCount = refSales / (2000 * 1.03);
+                        return Math.floor(purchaseCount * 10) / 10;
+                    });
+                    currentData.rcd.fees = [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1];
+                    break;
+                case 'standard':
+                    currentData.rcd.purchases = [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8];
+                    currentData.rcd.fees = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+                    break;
+                case 'seven':
+                    currentData.rcd.purchases = [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7];
+                    currentData.rcd.fees = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+                    break;
+                case 'six':
+                    currentData.rcd.purchases = [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6];
+                    currentData.rcd.fees = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                    break;
+            }
+            calculateRCD();
+            generateRCDTable();
+        }
+
         function applyRCTargetRate() {
             const targetRate = parseFloat(document.getElementById('rc-target-rate').value) || 0;
             currentData.rc.variations = referenceData.RC.map(ref => {
@@ -1129,13 +1322,19 @@
             const totalDiff = totalRevenue - totalRefRevenue;
 
             // ダッシュボード更新
-            document.getElementById('total-revenue').textContent = formatNumber(totalRevenue) + '万円';
-            document.getElementById('sr-total').textContent = formatNumber(srTotal) + '万円';
-            document.getElementById('w-total').textContent = formatNumber(wTotal) + '万円';
-            document.getElementById('rc-total').textContent = formatNumber(rcTotal) + '万円';
-            document.getElementById('rcd-total').textContent = formatNumber(rcdTotal) + '万円';
-            document.getElementById('total-diff').textContent = 
-                (totalDiff >= 0 ? '+' : '') + formatNumber(totalDiff) + '万円';
+            const totalRevenueElem = document.getElementById('total-revenue');
+            const srTotalElem = document.getElementById('sr-total');
+            const wTotalElem = document.getElementById('w-total');
+            const rcTotalElem = document.getElementById('rc-total');
+            const rcdTotalElem = document.getElementById('rcd-total');
+            const totalDiffElem = document.getElementById('total-diff');
+
+            if (totalRevenueElem) totalRevenueElem.textContent = formatNumber(totalRevenue) + '万円';
+            if (srTotalElem) srTotalElem.textContent = formatNumber(srTotal) + '万円';
+            if (wTotalElem) wTotalElem.textContent = formatNumber(wTotal) + '万円';
+            if (rcTotalElem) rcTotalElem.textContent = formatNumber(rcTotal) + '万円';
+            if (rcdTotalElem) rcdTotalElem.textContent = formatNumber(rcdTotal) + '万円';
+            if (totalDiffElem) totalDiffElem.textContent = (totalDiff >= 0 ? '+' : '') + formatNumber(totalDiff) + '万円';
         }
 
         // エクスポート機能
@@ -1201,202 +1400,47 @@
             };
         }
 
-        // 初期化
+        // 初期化（修正版）
         function initialize() {
+            // HTML要素に初期値を設定
+            const srCommissionElem = document.getElementById('sr-commission');
+            const srBonus6Elem = document.getElementById('sr-bonus6');
+            const srBonus12Elem = document.getElementById('sr-bonus12');
+            const srAdvertisingElem = document.getElementById('sr-advertising');
+            const wAdvertisingElem = document.getElementById('w-advertising');
+            const rcAdvertisingElem = document.getElementById('rc-advertising');
+            const rcExhibitionElem = document.getElementById('rc-exhibition');
+            const rcTargetRateElem = document.getElementById('rc-target-rate');
+            const rcCurrentRateElem = document.getElementById('rc-current-rate');
+
+            if (srCommissionElem) srCommissionElem.value = currentData.sr.variables.commission;
+            if (srBonus6Elem) srBonus6Elem.value = currentData.sr.variables.bonus6;
+            if (srBonus12Elem) srBonus12Elem.value = currentData.sr.variables.bonus12;
+            if (srAdvertisingElem) srAdvertisingElem.value = currentData.sr.variables.advertising;
+            if (wAdvertisingElem) wAdvertisingElem.value = currentData.w.variables.advertising;
+            if (rcAdvertisingElem) rcAdvertisingElem.value = currentData.rc.variables.advertising;
+            if (rcExhibitionElem) rcExhibitionElem.value = currentData.rc.variables.exhibition;
+            if (rcTargetRateElem) rcTargetRateElem.value = currentData.rc.targetRate;
+            if (rcCurrentRateElem) rcCurrentRateElem.textContent = currentData.rc.targetRate;
+
+            // テーブル生成
             generateSRTable();
             generateWTable();
             generateRCTable();
             generateRCDTable();
+            
+            // 計算実行
             calculateSR();
             calculateW();
             calculateRC();
             calculateRCD();
+            
+            // ダッシュボード更新
+            updateDashboard();
         }
 
         // ページ読み込み時に初期化実行
         window.onload = initialize;
     </script>
 </body>
-</html>RCDTable();
-        }
-
-        function updateRCDFee(monthIndex, value) {
-            currentData.rcd.fees[monthIndex] = parseInt(value) || 0;
-            calculateRCD();
-            generateRCDTable();
-        }
-
-        // 計算関数群
-        function calculateSR() {
-            // 変数をデータに同期
-            currentData.sr.variables.commission = parseInt(document.getElementById('sr-commission').value) || 0;
-            currentData.sr.variables.bonus6 = parseInt(document.getElementById('sr-bonus6').value) || 0;
-            currentData.sr.variables.bonus12 = parseInt(document.getElementById('sr-bonus12').value) || 0;
-            currentData.sr.variables.advertising = parseInt(document.getElementById('sr-advertising').value) || 0;
-
-            const totals = months.map((_, i) => {
-                return Object.values(currentData.sr.stores).reduce((sum, store) => sum + store[i], 0);
-            });
-            const annual = totals.reduce((sum, val) => sum + val, 0);
-            const refTotal = referenceData.SR.reduce((sum, val) => sum + val, 0);
-            const diff = annual - refTotal;
-
-            document.getElementById('sr-annual').textContent = 
-                `年間合計: ${formatNumber(annual)}万円　前年増減: ${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円`;
-            
-            updateDashboard();
-        }
-
-        function calculateW() {
-            // 変数をデータに同期
-            currentData.w.variables.advertising = parseInt(document.getElementById('w-advertising').value) || 0;
-
-            const annual = currentData.w.sales.reduce((sum, val) => sum + val, 0);
-            const refTotal = referenceData.W.reduce((sum, val) => sum + val, 0);
-            const diff = annual - refTotal;
-
-            document.getElementById('w-annual').textContent = 
-                `年間合計: ${formatNumber(annual)}万円　前年増減: ${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円`;
-            
-            updateDashboard();
-        }
-
-        function calculateRC() {
-            const totals = currentData.rc.variations.map(variation => currentData.rc.baseSales + variation);
-            const annual = totals.reduce((sum, val) => sum + val, 0);
-            const refTotal = referenceData.RC.reduce((sum, val) => sum + val, 0);
-            const diff = annual - refTotal;
-
-            document.getElementById('rc-annual').textContent = 
-                `年間合計: ${formatNumber(annual)}万円　前年増減: ${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円`;
-            
-            updateDashboard();
-        }
-
-        function calculateRCD() {
-            const totals = currentData.rcd.purchases.map(purchase => Math.round(purchase * 2000 * 1.03));
-            const annual = totals.reduce((sum, val) => sum + val, 0);
-            const refTotal = referenceData.RCD.reduce((sum, val) => sum + val, 0);
-            const diff = annual - refTotal;
-
-            document.getElementById('rcd-annual').textContent = 
-                `年間合計: ${formatNumber(annual)}万円　前年増減: ${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円`;
-            
-            updateDashboard();
-        }
-
-        // プリセット関数群（修正版 - 参照データを正しく使用）
-        function applySRPreset(presetType) {
-            const storeNames = Object.keys(currentData.sr.stores);
-            storeNames.forEach(storeName => {
-                for (let i = 0; i < 12; i++) {
-                    switch(presetType) {
-                        case 'actual':
-                            // 参照データから対応する値を設定
-                            const storeIndex = storeNames.indexOf(storeName);
-                            const storeData = [
-                                [416, 397, 421, 502, 471, 544, 567, 476, 355, 408, 299, 346], // 清水店
-                                [369, 386, 600, 535, 285, 437, 351, 270, 369, 391, 256, 242], // 静岡店
-                                [284, 375, 508, 278, 394, 394, 377, 309, 248, 469, 448, 535], // 掛川店
-                                [328, 547, 723, 520, 528, 607, 574, 318, 714, 657, 700, 600], // 市野店
-                                [349, 719, 247, 433, 308, 265, 516, 311, 222, 293, 272, 379], // 佐鳴台店
-                                [490, 493, 427, 542, 558, 416, 622, 641, 496, 385, 253, 620]  // 広島店
-                            ];
-                            currentData.sr.stores[storeName][i] = storeData[storeIndex][i];
-                            break;
-                        case '50p':
-                            currentData.sr.stores[storeName][i] = currentData.sr.stores[storeName][i] + 50;
-                            break;
-                        case '100p':
-                            currentData.sr.stores[storeName][i] = currentData.sr.stores[storeName][i] + 100;
-                            break;
-                        case '150p':
-                            currentData.sr.stores[storeName][i] = currentData.sr.stores[storeName][i] + 150;
-                            break;
-                    }
-                }
-            });
-            calculateSR();
-            generateSRTable();
-        }
-
-        function applyWPreset(presetType) {
-            for (let i = 0; i < 12; i++) {
-                switch(presetType) {
-                    case 'actual':
-                        currentData.w.sales[i] = referenceData.W[i];
-                        break;
-                    case '200':
-                        currentData.w.sales[i] = referenceData.W[i] + 200;
-                        break;
-                    case '400':
-                        currentData.w.sales[i] = referenceData.W[i] + 400;
-                        break;
-                    case '600':
-                        currentData.w.sales[i] = referenceData.W[i] + 600;
-                        break;
-                }
-            }
-            calculateW();
-            generateWTable();
-        }
-
-        function applyRCPreset(presetType) {
-            switch(presetType) {
-                case 'standard':
-                    currentData.rc.variations = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-                    currentData.rc.targetRate = 0;
-                    break;
-                case 'actual':
-                    // 参考データを基に過去実績パターンを設定
-                    currentData.rc.variations = referenceData.RC.map(ref => ref - currentData.rc.baseSales);
-                    currentData.rc.targetRate = 0;
-                    break;
-                case 'growth':
-                    currentData.rc.variations = referenceData.RC.map(ref => {
-                        const targetSales = Math.round(ref * 1.04);
-                        return targetSales - currentData.rc.baseSales;
-                    });
-                    currentData.rc.targetRate = 4;
-                    break;
-                case 'improvement':
-                    currentData.rc.variations = referenceData.RC.map(ref => {
-                        const targetSales = Math.round(ref * 1.07);
-                        return targetSales - currentData.rc.baseSales;
-                    });
-                    currentData.rc.targetRate = 7;
-                    break;
-            }
-            document.getElementById('rc-target-rate').value = currentData.rc.targetRate;
-            document.getElementById('rc-current-rate').textContent = currentData.rc.targetRate;
-            calculateRC();
-            generateRCTable();
-        }
-
-        function applyRCDPreset(presetType) {
-            switch(presetType) {
-                case 'zero':
-                    currentData.rcd.fees = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-                    break;
-                case 'actual':
-                    currentData.rcd.purchases = referenceData.RCD.map(refSales => {
-                        const purchaseCount = refSales / (2000 * 1.03);
-                        return Math.floor(purchaseCount * 10) / 10;
-                    });
-                    currentData.rcd.fees = [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1];
-                    break;
-                case 'standard':
-                    currentData.rcd.purchases = [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8];
-                    currentData.rcd.fees = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-                    break;
-                case 'seven':
-                    currentData.rcd.purchases = [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7];
-                    currentData.rcd.fees = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-                    break;
-                case 'six':
-                    currentData.rcd.purchases = [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6];
-                    currentData.rcd.fees = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-                    break;
-            }
-            calculateRCD();
-            generate
+</html>
