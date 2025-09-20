@@ -434,7 +434,9 @@
             <!-- 月次推移グラフ -->
             <div class="chart-container">
                 <div class="chart-title">月次営業利益推移（事業部別）</div>
-                <canvas id="profit-chart" class="chart-canvas"></canvas>
+                <div class="chart-wrapper">
+                    <canvas id="profit-chart" class="chart-canvas"></canvas>
+                </div>
             </div>
 
             <!-- 事業部別・月次詳細テーブル -->
@@ -583,10 +585,16 @@
                         datasets: datasets
                     },
                     options: {
-                        responsive: true,
+                        responsive: false, // レスポンシブを無効化
                         maintainAspectRatio: false,
-                        animation: {
-                            duration: 0 // アニメーションを無効化
+                        animation: false, // アニメーション完全無効化
+                        elements: {
+                            point: {
+                                radius: 4
+                            },
+                            line: {
+                                tension: 0.4
+                            }
                         },
                         plugins: {
                             legend: {
