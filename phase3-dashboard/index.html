@@ -447,7 +447,8 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.9.1/chart.min.js"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // 事業部合計PLシステム（データ整合性・自動更新機能付き）
         
@@ -502,12 +503,22 @@
             };
         }
 
-        // グラフ表示機能
+        // グラフ表示機能（修正版）
         let profitChart = null;
 
         function createProfitChart(departments, totalData) {
             const ctx = document.getElementById('profit-chart');
-            if (!ctx) return;
+            if (!ctx) {
+                console.log('Canvas要素が見つかりません');
+                return;
+            }
+
+            // Chart.jsが読み込まれているか確認
+            if (typeof Chart === 'undefined') {
+                console.log('Chart.jsが読み込まれていません');
+                setTimeout(() => createProfitChart(departments, totalData), 1000);
+                return;
+            }
 
             // 既存グラフを破棄
             if (profitChart) {
@@ -548,70 +559,79 @@
             });
 
             // 合計ライン（太線）
-            datasets.push({
-                label: '合計営業利益',
-                data: totalData.profit,
-                backgroundColor: 'rgba(52, 73, 94, 0.1)',
-                borderColor: '#34495e',
-                borderWidth: 3,
-                tension: 0.4,
-                pointRadius: 5,
-                pointHoverRadius: 8,
-                pointBackgroundColor: '#34495e'
-            });
+            if (totalData && totalData.profit) {
+                datasets.push({
+                    label: '合計営業利益',
+                    data: totalData.profit,
+                    backgroundColor: 'rgba(52, 73, 94, 0.1)',
+                    borderColor: '#34495e',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: '#34495e'
+                });
+            }
 
-            profitChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: months,
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.1)'
+            console.log('グラフ生成開始', datasets);
+
+            try {
+                profitChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 20
+                                }
                             },
-                            ticks: {
-                                callback: function(value) {
-                                    return value.toLocaleString() + '万円';
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + '万円';
+                                    }
                                 }
                             }
                         },
-                        x: {
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.1)'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 20
-                            }
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            callbacks: {
-                                label: function(context) {
-                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + '万円';
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString() + '万円';
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
                                 }
                             }
+                        },
+                        interaction: {
+                            mode: 'nearest',
+                            axis: 'x',
+                            intersect: false
                         }
-                    },
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
                     }
-                }
-            });
+                });
+                console.log('グラフ生成成功');
+            } catch (error) {
+                console.error('グラフ生成エラー:', error);
+            }
         }
         function loadDepartmentData(salesKey, settingsKey, deptName) {
             try {
@@ -914,10 +934,20 @@
             }
         });
 
-        // ページ読み込み時の初期化
+        // ページ読み込み時の初期化（修正版）
         window.addEventListener('load', function() {
             console.log('事業部合計PLシステム初期化開始');
-            updateDashboard();
+            
+            // Chart.jsの読み込み確認
+            if (typeof Chart === 'undefined') {
+                console.log('Chart.js読み込み待機中...');
+                setTimeout(() => {
+                    updateDashboard();
+                }, 2000);
+            } else {
+                console.log('Chart.js読み込み完了');
+                updateDashboard();
+            }
         });
 
         // 定期的なデータチェック（5秒間隔）
