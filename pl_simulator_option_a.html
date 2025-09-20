@@ -310,6 +310,22 @@
         .export-btn.w-send:hover {
             box-shadow: 0 10px 25px rgba(49, 130, 206, 0.3);
         }
+
+        .export-btn.rc-send {
+            background: linear-gradient(135deg, #38a169, #2f855a);
+        }
+
+        .export-btn.rc-send:hover {
+            box-shadow: 0 10px 25px rgba(56, 161, 105, 0.3);
+        }
+
+        .export-btn.rcd-send {
+            background: linear-gradient(135deg, #805ad5, #6b46c1);
+        }
+
+        .export-btn.rcd-send:hover {
+            box-shadow: 0 10px 25px rgba(128, 90, 213, 0.3);
+        }
         
         .progress-indicator {
             text-align: center;
@@ -398,7 +414,7 @@
                             システム2: 事業部別PL表示システム
                         </button>
                         <button class="system-btn" onclick="showSystem('dashboard')">
-                            システム3: 統合ダッシュボードシステム
+                            システム3: 事業部合計PLシステム
                         </button>
                     </div>
                 </td>
@@ -411,7 +427,7 @@
             
             <!-- 連携状態表示 -->
             <div id="linkage-status" class="linkage-status warning">
-                <strong>データ連携:</strong> <span id="status-text">SRデータ送信準備完了</span>
+                <strong>データ連携:</strong> <span id="status-text">全事業部データ送信準備完了</span>
             </div>
             
             <!-- SR事業部 -->
@@ -585,6 +601,13 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- RC専用データ送信ボタン -->
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="export-btn rc-send" onclick="sendRCDataToPLSystem()">
+                        RCデータをPLシステムに送信
+                    </button>
+                </div>
             </div>
 
             <!-- RCD社事業部 -->
@@ -621,13 +644,20 @@
                         <!-- RCD社事業部テーブル（JavaScript で生成） -->
                     </table>
                 </div>
+
+                <!-- RCD専用データ送信ボタン -->
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="export-btn rcd-send" onclick="sendRCDDataToPLSystem()">
+                        RCDデータをPLシステムに送信
+                    </button>
+                </div>
             </div>
             
             <div class="progress-indicator">
                 <div class="progress-bar">
                     <div class="progress-fill" style="width: 100%;"></div>
                 </div>
-                <p>完成度: 100% - integrated_pl_engine.tsx完全移植完了</p>
+                <p>完成度: 100% - integrated_pl_engine.tsx完全移植完了・全事業部連携機能実装済み</p>
             </div>
         </div>
         
@@ -650,9 +680,9 @@
             </div>
         </div>
         
-        <!-- システム3: 統合ダッシュボードシステム -->
+        <!-- システム3: 事業部合計PLシステム -->
         <div id="dashboard-system" class="system-content">
-            <h2 style="margin-bottom: 25px; color: #2d3748;">システム3: 統合ダッシュボードシステム</h2>
+            <h2 style="margin-bottom: 25px; color: #2d3748;">システム3: 事業部合計PLシステム</h2>
             
             <div class="results-grid" id="dashboard-results">
                 <div class="result-card">
@@ -835,6 +865,75 @@
             } catch (error) {
                 updateLinkageStatus('error', '❌ Wデータ送信に失敗しました');
                 alert('Wデータ送信に失敗しました: ' + error.message);
+            }
+        }
+
+        // RC卸事業部データをPLシステムに送信する新機能
+        function sendRCDataToPLSystem() {
+            try {
+                // RCデータを保存
+                const rcSalesData = {
+                    baseSales: currentData.rc.baseSales,
+                    variations: currentData.rc.variations,
+                    timestamp: new Date().toISOString()
+                };
+
+                const rcSettings = {
+                    advertising: currentData.rc.variables.advertising,
+                    decemberExhibition: currentData.rc.variables.exhibition,
+                    aprilBoothFee: currentData.rc.variables.exhibition
+                };
+
+                // localStorage に保存
+                localStorage.setItem('rc_sales_data', JSON.stringify(rcSalesData));
+                localStorage.setItem('rc_pl_settings', JSON.stringify(rcSettings));
+
+                // 状態表示を更新
+                updateLinkageStatus('success', '✅ RCデータを正常に送信しました');
+
+                // 成功メッセージ
+                const monthlySales = currentData.rc.variations.map(variation => currentData.rc.baseSales + variation);
+                const annual = monthlySales.reduce((sum, val) => sum + val, 0);
+                alert('RCデータをPLシステムに送信しました！\n\n' +
+                      '年間合計: ' + formatNumber(annual) + '万円\n' +
+                      '送信時刻: ' + new Date().toLocaleTimeString());
+
+            } catch (error) {
+                updateLinkageStatus('error', '❌ RCデータ送信に失敗しました');
+                alert('RCデータ送信に失敗しました: ' + error.message);
+            }
+        }
+
+        // RCD社事業部データをPLシステムに送信する新機能
+        function sendRCDDataToPLSystem() {
+            try {
+                // RCDデータを保存
+                const rcdSalesData = {
+                    purchases: currentData.rcd.purchases,
+                    timestamp: new Date().toISOString()
+                };
+
+                const rcdSettings = {
+                    feeOccurrences: currentData.rcd.fees
+                };
+
+                // localStorage に保存
+                localStorage.setItem('rcd_sales_data', JSON.stringify(rcdSalesData));
+                localStorage.setItem('rcd_pl_settings', JSON.stringify(rcdSettings));
+
+                // 状態表示を更新
+                updateLinkageStatus('success', '✅ RCDデータを正常に送信しました');
+
+                // 成功メッセージ
+                const monthlySales = currentData.rcd.purchases.map(purchase => Math.round(purchase * 2000 * 1.03));
+                const annual = monthlySales.reduce((sum, val) => sum + val, 0);
+                alert('RCDデータをPLシステムに送信しました！\n\n' +
+                      '年間合計: ' + formatNumber(annual) + '万円\n' +
+                      '送信時刻: ' + new Date().toLocaleTimeString());
+
+            } catch (error) {
+                updateLinkageStatus('error', '❌ RCDデータ送信に失敗しました');
+                alert('RCDデータ送信に失敗しました: ' + error.message);
             }
         }
 
@@ -1253,7 +1352,7 @@
         function applyRCDPreset(presetType) {
             switch(presetType) {
                 case 'zero':
-                    currentData.rcd.purchases = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                    // 手数料のみ0回にリセット（売上は維持）
                     currentData.rcd.fees = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
                     break;
                 case 'actual':
