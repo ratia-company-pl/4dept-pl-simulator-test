@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 2: 事業部別PL表示システム</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .business-selector {
+            padding: 12px 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            background: white;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .business-selector:hover {
+            border-color: #3498db;
+            background: #f8fcff;
+        }
+        
+        .business-selector.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .import-btn {
+            padding: 12px 24px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .import-btn:hover {
+            background: #229954;
+            transform: translateY(-1px);
+        }
+        
+        .back-btn {
+            background: #95a5a6;
+        }
+        
+        .back-btn:hover {
+            background: #7f8c8d;
+        }
+        
+        .phase-btn {
+            background: #e74c3c;
+        }
+        
+        .phase-btn:hover {
+            background: #c0392b;
+        }
+        
+        .current-business {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .pl-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .pl-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .pl-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .pl-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .metric-label {
+            text-align: left !important;
+            font-weight: 600;
+            color: #2c3e50;
+            background: #f8f9fa;
+            padding-left: 20px !important;
+        }
+        
+        .section-header {
+            background: #34495e !important;
+            color: white !important;
+            font-weight: 700;
+            text-align: center !important;
+        }
+        
+        .subtotal-row {
+            background: #ecf0f1 !important;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .profit-row {
+            background: #d5f4e6 !important;
+            font-weight: 700;
+            color: #27ae60;
+        }
+        
+        .loss-row {
+            background: #fadbd8 !important;
+            font-weight: 700;
+            color: #e74c3c;
+        }
+        
+        .calculation-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+            font-size: 14px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-size: 18px;
+        }
+        
+        .github-test {
+            background: #e8f5e8;
+            border: 2px solid #27ae60;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-status {
+            color: #27ae60;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Phase 2: 事業部別PL表示システム</h1>
+        
+        <div class="github-test" id="githubTest">
+            <div class="test-status">GitHub Pages 自動連携テスト結果</div>
+            <div id="testResult">データの読み込み状況を確認中...</div>
+        </div>
+        
+        <div class="controls">
+            <button class="import-btn back-btn" onclick="window.location.href='../'">← メニューに戻る</button>
+            <button class="import-btn back-btn" onclick="window.location.href='../phase1-input/'">← Phase 1に戻る</button>
+            
+            <button class="business-selector active" data-business="sr">SR事業部</button>
+            <button class="business-selector" data-business="w">W事業部</button>
+            <button class="business-selector" data-business="rc">RC社事業部</button>
+            <button class="business-selector" data-business="rcd">RCD社事業部</button>
+            
+            <input type="file" id="fileInput" accept=".json" onchange="importData(event)">
+            <button class="import-btn" onclick="document.getElementById('fileInput').click()">手動データインポート</button>
+            <button class="import-btn phase-btn" onclick="transferToPhase3()">Phase 3で統合分析 →</button>
+        </div>
+        
+        <div class="current-business" id="currentBusiness">SR事業部 - PL計算結果</div>
+        
+        <div class="calculation-info" id="calculationInfo">
+            <strong>SR事業部 計算ロジック:</strong> 
+            粗利率27.2% | 人件費: 売上レンジ別(500万未満24%, 500-1000万22%, 1000-1500万20%, 1500万以上18%) | コミッション: 3.5% | 固定費: 会場154万+設備86万+その他84万
+        </div>
+        
+        <div id="noDataMessage" class="no-data hidden">
+            データが読み込まれていません。Phase 1からの自動連携、または手動インポートでデータを読み込んでください。
+        </div>
+        
+        <table class="pl-table" id="plTable">
+            <thead>
+                <tr>
+                    <th style="width: 200px;">項目</th>
+                    <th>1月</th>
+                    <th>2月</th>
+                    <th>3月</th>
+                    <th>4月</th>
+                    <th>5月</th>
+                    <th>6月</th>
+                    <th>7月</th>
+                    <th>8月</th>
+                    <th>9月</th>
+                    <th>10月</th>
+                    <th>11月</th>
+                    <th>12月</th>
+                </tr>
+            </thead>
+            <tbody id="plTableBody">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let currentBusiness = 'sr';
+        let businessData = null;
+        let calculatedPL = {};
+
+        // 事業部設定
+        const businessConfigs = {
+            sr: {
+                grossMarginRate: 0.272,
+                commissionRate: 0.035,
+                advertising: { 1: 0, 2: 2, 3: 0, 4: 0, 5: 0, 6: 6, 7: 0, 8: 6, 9: 0, 10: 10, 11: 0, 12: 12 },
+                fixedCosts: { venue: 154, facility: 86, others: 84 },
+                personnelRates: [
+                    { min: 0, max: 500, rate: 0.24 },
+                    { min: 500, max: 1000, rate: 0.22 },
+                    { min: 1000, max: 1500, rate: 0.20 },
+                    { min: 1500, max: Infinity, rate: 0.18 }
+                ]
+            },
+            w: {
+                grossMarginRate: 0.2996,
+                paymentFeeThreshold: 1000,
+                paymentFeeRates: { low: 0.06, high: 0.08 },
+                personnelRanges: [
+                    { min: 0, max: 500, cost: 120 },
+                    { min: 500, max: 1000, cost: 150 },
+                    { min: 1000, max: 1500, cost: 180 },
+                    { min: 1500, max: Infinity, cost: 200 }
+                ],
+                bonusMonths: { 8: 1.0, 12: 1.5 }
+            },
+            rc: {
+                grossMarginRate: 0.352,
+                fixedPersonnel: 280,
+                fixedCosts: { venue: 154, facility: 86, others: 84 }
+            },
+            rcd: {
+                grossMarginRate: 0.97,
+                fixedCosts: { managementFees: 90.6 }
+            }
+        };
+
+        const calculationInfos = {
+            sr: "粗利率27.2% | 人件費: 売上レンジ別(500万未満24%, 500-1000万22%, 1000-1500万20%, 1500万以上18%) | コミッション: 3.5% | 固定費: 会場154万+設備86万+その他84万",
+            w: "粗利率29.96% | 決済手数料: 1000万未満6%, 1000万以上8% | 人件費: レンジ別固定+ボーナス(8月1.0倍, 12月1.5倍)",
+            rc: "粗利率35.2% | 基準売上1550万/月 | 固定人件費280万 | 固定費: 会場154万+設備86万+その他84万",
+            rcd: "粗利率97% | 売上単価2000万/本 | 固定費: 管理手数料90.6万"
+        };
+
+        const businessNames = {
+            sr: 'SR事業部',
+            w: 'W事業部', 
+            rc: 'RC社事業部',
+            rcd: 'RCD社事業部'
+        };
+
+        // 初期化
+        function init() {
+            updateBusinessSelector();
+            checkAutoLoadData();
+        }
+
+        // 自動データ読み込みチェック
+        function checkAutoLoadData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromPhase1 = urlParams.get('from') === 'phase1';
+            
+            if (fromPhase1) {
+                // ローカルストレージからデータ読み込み
+                const storedData = localStorage.getItem('phase1_to_phase2_data');
+                if (storedData) {
+                    try {
+                        const data = JSON.parse(storedData);
+                        businessData = data.businessData;
+                        calculatePL();
+                        renderPL();
+                        showPLTable();
+                        
+                        document.getElementById('testResult').innerHTML = 
+                            '<span style="color: #27ae60;">✓ Phase 1からのデータ自動読み込み成功</span><br>' +
+                            'データサイズ: ' + storedData.length + ' 文字<br>' +
+                            'タイムスタンプ: ' + data.timestamp;
+                    } catch (error) {
+                        document.getElementById('testResult').innerHTML = 
+                            '<span style="color: #e74c3c;">✗ データ読み込みエラー: ' + error.message + '</span>';
+                    }
+                } else {
+                    document.getElementById('testResult').innerHTML = 
+                        '<span style="color: #f39c12;">⚠ Phase 1からのデータが見つかりません</span>';
+                }
+            } else {
+                document.getElementById('testResult').innerHTML = 
+                    '<span style="color: #7f8c8d;">Phase 1からの自動連携待機中</span>';
+                showNoDataMessage();
+            }
+        }
+
+        // データなしメッセージ表示
+        function showNoDataMessage() {
+            document.getElementById('noDataMessage').classList.remove('hidden');
+            document.getElementById('plTable').classList.add('hidden');
+        }
+
+        // データありの場合の表示
+        function showPLTable() {
+            document.getElementById('noDataMessage').classList.add('hidden');
+            document.getElementById('plTable').classList.remove('hidden');
+        }
+
+        // 事業部選択
+        function updateBusinessSelector() {
+            const selectors = document.querySelectorAll('.business-selector');
+            selectors.forEach(selector => {
+                selector.addEventListener('click', function() {
+                    selectors.forEach(s => s.classList.remove('active'));
+                    this.classList.add('active');
+                    currentBusiness = this.dataset.business;
+                    
+                    document.getElementById('currentBusiness').textContent = 
+                        businessNames[currentBusiness] + ' - PL計算結果';
+                    
+                    document.getElementById('calculationInfo').innerHTML = 
+                        `<strong>${businessNames[currentBusiness]} 計算ロジック:</strong> ${calculationInfos[currentBusiness]}`;
+                    
+                    if (businessData) {
+                        calculatePL();
+                        renderPL();
+                    }
+                });
+            });
+        }
+
+        // 手動データインポート
+        function importData(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        businessData = data.businessData;
+                        calculatePL();
+                        renderPL();
+                        showPLTable();
+                        
+                        document.getElementById('testResult').innerHTML = 
+                            '<span style="color: #3498db;">✓ 手動インポート成功</span>';
+                        alert('データを正常に読み込みました！');
+                    } catch (error) {
+                        alert('ファイルの読み込みに失敗しました: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // PL計算
+        function calculatePL() {
+            if (!businessData) return;
+
+            calculatedPL = {};
+            Object.keys(businessData).forEach(business => {
+                calculatedPL[business] = {};
+                for (let month = 1; month <= 12; month++) {
+                    calculatedPL[business][month] = calculateMonthlyPL(business, month);
+                }
+            });
+        }
+
+        // 月次PL計算
+        function calculateMonthlyPL(business, month) {
+            const inputData = businessData[business][month];
+            const config = businessConfigs[business];
+            const result = {
+                revenue: inputData.revenue,
+                inputCosts: inputData.costs,
+                inputPersonnel: inputData.personnel,
+                inputAdvertising: inputData.advertising
+            };
+
+            switch (business) {
+                case 'sr':
+                    return calculateSRPL(result, config, month);
+                case 'w':
+                    return calculateWPL(result, config, month);
+                case 'rc':
+                    return calculateRCPL(result, config, month);
+                case 'rcd':
+                    return calculateRCDPL(result, config, month);
+                default:
+                    return result;
+            }
+        }
+
+        // SR事業部PL計算
+        function calculateSRPL(result, config, month) {
+            result.grossProfit = Math.floor(result.revenue * config.grossMarginRate);
+            
+            const personnelRate = config.personnelRates.find(range => 
+                result.revenue >= range.min && result.revenue < range.max
+            )?.rate || 0.18;
+            result.calculatedPersonnel = Math.floor(result.revenue * personnelRate);
+            
+            result.commission = Math.floor(result.revenue * config.commissionRate);
+            result.calculatedAdvertising = config.advertising[month] || 0;
+            result.fixedCosts = config.fixedCosts.venue + config.fixedCosts.facility + config.fixedCosts.others;
+            
+            result.operatingProfit = result.grossProfit - result.calculatedPersonnel - 
+                                   result.commission - result.calculatedAdvertising - result.fixedCosts;
+            
+            return result;
+        }
+
+        // W事業部PL計算
+        function calculateWPL(result, config, month) {
+            result.grossProfit = Math.floor(result.revenue * config.grossMarginRate);
+            
+            const feeRate = result.revenue >= config.paymentFeeThreshold ? 
+                          config.paymentFeeRates.high : config.paymentFeeRates.low;
+            result.paymentFees = Math.floor(result.revenue * feeRate);
+            
+            const personnelBase = config.personnelRanges.find(range => 
+                result.revenue >= range.min && result.revenue < range.max
+            )?.cost || 200;
+            const bonusMultiplier = config.bonusMonths[month] || 0;
+            result.calculatedPersonnel = personnelBase + Math.floor(personnelBase * bonusMultiplier);
+            
+            result.operatingProfit = result.grossProfit - result.paymentFees - result.calculatedPersonnel;
+            
+            return result;
+        }
+
+        // RC社事業部PL計算  
+        function calculateRCPL(result, config, month) {
+            result.grossProfit = Math.floor(result.revenue * config.grossMarginRate);
+            result.calculatedPersonnel = config.fixedPersonnel;
+            result.fixedCosts = config.fixedCosts.venue + config.fixedCosts.facility + config.fixedCosts.others;
+            result.operatingProfit = result.grossProfit - result.calculatedPersonnel - result.fixedCosts;
+            return result;
+        }
+
+        // RCD社事業部PL計算
+        function calculateRCDPL(result, config, month) {
+            result.grossProfit = Math.floor(result.revenue * config.grossMarginRate);
+            result.managementFees = config.fixedCosts.managementFees;
+            result.operatingProfit = result.grossProfit - result.managementFees;
+            return result;
+        }
+
+        // PL表示
+        function renderPL() {
+            const tbody = document.getElementById('plTableBody');
+            tbody.innerHTML = '';
+
+            if (!calculatedPL[currentBusiness]) return;
+
+            const months = Array.from({length: 12}, (_, i) => i + 1);
+            
+            // 売上
+            addPLRow(tbody, '売上高', months.map(m => formatNumber(calculatedPL[currentBusiness][m].revenue)), 'section-header');
+            
+            // 粗利
+            addPLRow(tbody, '粗利益', months.map(m => formatNumber(calculatedPL[currentBusiness][m].grossProfit)), 'subtotal-row');
+            
+            // 費用セクション
+            addPLRow(tbody, '--- 費用 ---', Array(12).fill(''), 'section-header');
+            
+            // 人件費
+            addPLRow(tbody, '人件費', months.map(m => formatNumber(calculatedPL[currentBusiness][m].calculatedPersonnel)));
+            
+            // 事業部別の特殊費用
+            if (currentBusiness === 'sr') {
+                addPLRow(tbody, 'コミッション', months.map(m => formatNumber(calculatedPL[currentBusiness][m].commission)));
+                addPLRow(tbody, '広告費', months.map(m => formatNumber(calculatedPL[currentBusiness][m].calculatedAdvertising)));
+                addPLRow(tbody, '固定費', months.map(m => formatNumber(calculatedPL[currentBusiness][m].fixedCosts)));
+            } else if (currentBusiness === 'w') {
+                addPLRow(tbody, '決済手数料', months.map(m => formatNumber(calculatedPL[currentBusiness][m].paymentFees)));
+            } else if (currentBusiness === 'rc') {
+                addPLRow(tbody, '固定費', months.map(m => formatNumber(calculatedPL[currentBusiness][m].fixedCosts)));
+            } else if (currentBusiness === 'rcd') {
+                addPLRow(tbody, '管理手数料', months.map(m => formatNumber(calculatedPL[currentBusiness][m].managementFees)));
+            }
+            
+            // 営業利益
+            const operatingProfits = months.map(m => calculatedPL[currentBusiness][m].operatingProfit);
+            const profitClass = operatingProfits.some(p => p < 0) ? 'loss-row' : 'profit-row';
+            addPLRow(tbody, '営業利益', operatingProfits.map(formatNumber), profitClass);
+        }
+
+        // PL行追加
+        function addPLRow(tbody, label, values, className = '') {
+            const row = document.createElement('tr');
+            if (className) row.className = className;
+            
+            row.innerHTML = `
+                <td class="metric-label">${label}</td>
+                ${values.map(value => `<td>${value}</td>`).join('')}
+            `;
+            tbody.appendChild(row);
+        }
+
+        // Phase 3への自動データ転送
+        function transferToPhase3() {
+            if (!businessData || !calculatedPL) {
+                alert('データが読み込まれていません。Phase 1からの自動連携、または手動インポートでデータを読み込んでください。');
+                return;
+            }
+            
+            // 統合ダッシュボード用のデータ準備
+            const transferData = {
+                timestamp: new Date().toISOString(),
+                businessData: businessData,
+                calculatedPL: calculatedPL,
+                configs: businessConfigs
+            };
+            
+            localStorage.setItem('phase2_to_phase3_data', JSON.stringify(transferData));
+            window.location.href = '../phase3-dashboard/?from=phase2';
+        }
+
+        // 数値フォーマット
+        function formatNumber(num) {
+            if (num === 0) return '0';
+            if (num === undefined || num === null) return '-';
+            return num.toLocaleString();
+        }
+
+        // 初期化実行
+        init();
+    </script>
+</body>
+</html>
