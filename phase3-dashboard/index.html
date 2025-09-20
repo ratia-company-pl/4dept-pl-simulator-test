@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 3: 統合ダッシュボードシステム</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .import-btn {
+            padding: 12px 24px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .import-btn:hover {
+            background: #229954;
+            transform: translateY(-1px);
+        }
+        
+        .back-btn {
+            background: #95a5a6;
+        }
+        
+        .back-btn:hover {
+            background: #7f8c8d;
+        }
+        
+        .export-btn {
+            background: #f39c12;
+        }
+        
+        .export-btn:hover {
+            background: #d68910;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .dashboard-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e1e8ed;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .profit-positive {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%) !important;
+        }
+        
+        .profit-negative {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 15px;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-size: 18px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .github-test {
+            background: #e8f5e8;
+            border: 2px solid #27ae60;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-status {
+            color: #27ae60;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .integrated-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .integrated-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .integrated-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .integrated-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .metric-label {
+            text-align: left !important;
+            font-weight: 600;
+            color: #2c3e50;
+            background: #f8f9fa;
+            padding-left: 20px !important;
+        }
+        
+        .business-header {
+            background: #34495e !important;
+            color: white !important;
+            font-weight: 700;
+        }
+        
+        .total-row {
+            background: #2c3e50 !important;
+            color: white !important;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Phase 3: 統合ダッシュボードシステム</h1>
+        
+        <div class="github-test" id="githubTest">
+            <div class="test-status">GitHub Pages 統合テスト結果</div>
+            <div id="testResult">データの読み込み状況を確認中...</div>
+        </div>
+        
+        <div class="controls">
+            <button class="import-btn back-btn" onclick="window.location.href='../'">← メニューに戻る</button>
+            <button class="import-btn back-btn" onclick="window.location.href='../phase2-pl-display/'">← Phase 2に戻る</button>
+            <button class="import-btn back-btn" onclick="window.location.href='../phase1-input/'">← Phase 1で再編集</button>
+            
+            <input type="file" id="fileInput" accept=".json" onchange="importData(event)">
+            <button class="import-btn" onclick="document.getElementById('fileInput').click()">手動データインポート</button>
+            <button class="import-btn export-btn" onclick="exportDashboardReport()">詳細レポートエクスポート</button>
+        </div>
+        
+        <div id="noDataMessage" class="no-data">
+            データが読み込まれていません。Phase 1またはPhase 2からの自動連携、または手動でファイルを読み込んでください。
+        </div>
+        
+        <div id="dashboardContent" class="hidden">
+            <div class="dashboard-grid">
+                <!-- 年間サマリー -->
+                <div class="dashboard-card">
+                    <div class="card-title">年間サマリー</div>
+                    <div class="summary-stats">
+                        <div class="stat-item" id="totalRevenue">
+                            <div class="stat-value" id="totalRevenueValue">0</div>
+                            <div class="stat-label">年間売上高 (万円)</div>
+                        </div>
+                        <div class="stat-item" id="totalProfit">
+                            <div class="stat-value" id="totalProfitValue">0</div>
+                            <div class="stat-label">年間営業利益 (万円)</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="profitMarginValue">0%</div>
+                            <div class="stat-label">営業利益率</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="bestMonthValue">-</div>
+                            <div class="stat-label">最高益月</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 月別推移グラフ -->
+                <div class="dashboard-card">
+                    <div class="card-title">月別営業利益推移</div>
+                    <div class="chart-container">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 統合PL表 -->
+            <div class="dashboard-card">
+                <div class="card-title">統合PL表 - 全事業部月次詳細</div>
+                <table class="integrated-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 200px;">事業部 / 項目</th>
+                            <th>1月</th>
+                            <th>2月</th>
+                            <th>3月</th>
+                            <th>4月</th>
+                            <th>5月</th>
+                            <th>6月</th>
+                            <th>7月</th>
+                            <th>8月</th>
+                            <th>9月</th>
+                            <th>10月</th>
+                            <th>11月</th>
+                            <th>12月</th>
+                        </tr>
+                    </thead>
+                    <tbody id="integratedTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let businessData = null;
+        let calculatedPL = {};
+        let monthlyChart = null;
+
+        const businessConfigs = {
+            sr: {
+                grossMarginRate: 0.272,
+                commissionRate: 0.035,
+                advertising: { 1: 0, 2: 2, 3: 0, 4: 0, 5: 0, 6: 6, 7: 0, 8: 6, 9: 0, 10: 10, 11: 0, 12: 12 },
+                fixedCosts: { venue: 154, facility: 86, others: 84 },
+                personnelRates: [
+                    { min: 0, max: 500, rate: 0.24 },
+                    { min: 500, max: 1000, rate: 0.22 },
+                    { min: 1000, max: 1500, rate: 0.20 },
+                    { min: 1500, max: Infinity, rate: 0.18 }
+                ]
+            },
+            w: {
+                grossMarginRate: 0.2996,
+                paymentFeeThreshold: 1000,
+                paymentFeeRates: { low: 0.06, high: 0.08 },
+                personnelRanges: [
+                    { min: 0, max: 500, cost: 120 },
+                    { min: 500, max: 1000, cost: 150 },
+                    { min: 1000, max: 1500, cost: 180 },
+                    { min: 1500, max: Infinity, cost: 200 }
+                ],
+                bonusMonths: { 8: 1.0, 12: 1.5 }
+            },
+            rc: {
+                grossMarginRate: 0.352,
+                fixedPersonnel: 280,
+                fixedCosts: { venue: 154, facility: 86, others: 84 }
+            },
+            rcd: {
+                grossMarginRate: 0.97,
+                fixedCosts: { managementFees: 90.6 }
+            }
+        };
+
+        const businessNames = {
+            sr: 'SR事業部',
+            w: 'W事業部',
+            rc: 'RC社事業部',
+            rcd: 'RCD社事業部'
+        };
+
+        // 初期化
+        function init() {
+            checkAutoLoadData();
+        }
+
+        // 自動データ読み込みチェック
+        function checkAutoLoadData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromPhase2 = urlParams.get('from') === 'phase2';
+            
+            if (fromPhase2) {
+                const storedData = localStorage.getItem('phase2_to_phase3_data');
+                if (storedData) {
+                    try {
+                        const data = JSON.parse(storedData);
+                        businessData = data.businessData;
+                        calculatedPL = data.calculatedPL || {};
+                        
+                        if (!data.calculatedPL) {
+                            calculateAllPL();
+                        }
+                        
+                        renderDashboard();
+                        showDashboard();
+                        
+                        document.getElementById('testResult').innerHTML = 
+                            '<span style="color: #27ae60;">✓ Phase 2からのデータ自動読み込み成功</span><br>' +
+                            'データサイズ: ' + storedData.length + ' 文字<br>' +
+                            'タイムスタンプ: ' + data.timestamp;
+                    } catch (error) {
+                        document.getElementById('testResult').innerHTML = 
+                            '<span style="color: #e74c3c;">✗ データ読み込みエラー: ' + error.message + '</span>';
+                        showNoDataMessage();
+                    }
+                } else {
+                    document.getElementById('testResult').innerHTML = 
+                        '<span style="color: #f39c12;">⚠ Phase 2からのデータが見つかりません</span>';
+                    showNoDataMessage();
+                }
+            } else {
+                document.getElementById('testResult').innerHTML = 
+                    '<span style="color: #7f8c8d;">Phase 1またはPhase 2からの自動連携待機中</span>';
+                showNoDataMessage();
+            }
+        }
+
+        // データなしメッセージ表示
+        function showNoDataMessage() {
+            document.getElementById('noDataMessage').classList.remove('hidden');
+            document.getElementById('dashboardContent').classList.add('hidden');
+        }
+
+        // ダッシュボード表示
+        function showDashboard() {
+            document.getElementById('noDataMessage').classList.add('hidden');
+            document.getElementById('dashboardContent').classList.remove('hidden');
+        }
+
+        // 手動データインポート
+        function importData(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        businessData = data.businessData;
+                        calculateAllPL();
+                        renderDashboard();
+                        showDashboard();
+                        
+                        document.getElementById('testResult').innerHTML = 
+                            '<span style="color: #3498db;">✓ 手動インポート成功</span>';
+                        alert('データを正常に読み込みました！');
+                    } catch (error) {
+                        alert('ファイルの読み込みに失敗しました: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // 全PL計算（Phase 2と同じロジック）
+        function calculateAllPL() {
+            if (!businessData) return;
+
+            calculatedPL = {};
+            Object.keys(businessData).forEach(business => {
+                calculatedPL[business] = {};
+                for (let month = 1; month <= 12; month++) {
+                    calculatedPL[business][month] = calculateMonthlyPL(business, month);
+                }
+            });
+        }
+
+        // 月次PL計算
+        function calculateMonthlyPL(business, month) {
+            const inputData = businessData[business][month];
+            const config = businessConfigs[business];
+            const result = {
+                revenue: inputData.revenue,
+                operatingProfit: 0
+            };
+
+            switch (business) {
+                case 'sr':
+                    const grossProfit = Math.floor(result.revenue * config.grossMarginRate);
+                    const personnelRate = config.personnelRates.find(range => 
+                        result.revenue >= range.min && result.revenue < range.max
+                    )?.rate || 0.18;
+                    const personnel = Math.floor(result.revenue * personnelRate);
+                    const commission = Math.floor(result.revenue * config.commissionRate);
+                    const advertising = config.advertising[month] || 0;
+                    const fixedCosts = config.fixedCosts.venue + config.fixedCosts.facility + config.fixedCosts.others;
+                    result.operatingProfit = grossProfit - personnel - commission - advertising - fixedCosts;
+                    break;
+                    
+                case 'w':
+                    const wGrossProfit = Math.floor(result.revenue * config.grossMarginRate);
+                    const feeRate = result.revenue >= config.paymentFeeThreshold ? 
+                                  config.paymentFeeRates.high : config.paymentFeeRates.low;
+                    const paymentFees = Math.floor(result.revenue * feeRate);
+                    const wPersonnelBase = config.personnelRanges.find(range => 
+                        result.revenue >= range.min && result.revenue < range.max
+                    )?.cost || 200;
+                    const bonusMultiplier = config.bonusMonths[month] || 0;
+                    const wPersonnel = wPersonnelBase + Math.floor(wPersonnelBase * bonusMultiplier);
+                    result.operatingProfit = wGrossProfit - paymentFees - wPersonnel;
+                    break;
+                    
+                default:
+                    result.operatingProfit = Math.floor(result.revenue * 0.1); // 簡易計算
+                    break;
+            }
+
+            return result;
+        }
+
+        // ダッシュボード描画
+        function renderDashboard() {
+            renderSummaryStats();
+            renderMonthlyChart();
+            renderIntegratedTable();
+        }
+
+        // サマリー統計
+        function renderSummaryStats() {
+            let totalRevenue = 0;
+            let totalProfit = 0;
+            let bestMonth = 1;
+            let bestProfit = -Infinity;
+
+            for (let month = 1; month <= 12; month++) {
+                let monthRevenue = 0;
+                let monthProfit = 0;
+                
+                Object.keys(calculatedPL).forEach(business => {
+                    monthRevenue += calculatedPL[business][month].revenue;
+                    monthProfit += calculatedPL[business][month].operatingProfit;
+                });
+                
+                totalRevenue += monthRevenue;
+                totalProfit += monthProfit;
+                
+                if (monthProfit > bestProfit) {
+                    bestProfit = monthProfit;
+                    bestMonth = month;
+                }
+            }
+
+            document.getElementById('totalRevenueValue').textContent = formatNumber(totalRevenue);
+            document.getElementById('totalProfitValue').textContent = formatNumber(totalProfit);
+            document.getElementById('profitMarginValue').textContent = 
+                totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) + '%' : '0%';
+            document.getElementById('bestMonthValue').textContent = bestMonth + '月';
+
+            const profitElement = document.getElementById('totalProfit');
+            profitElement.className = 'stat-item ' + (totalProfit >= 0 ? 'profit-positive' : 'profit-negative');
+        }
+
+        // 月別推移チャート
+        function renderMonthlyChart() {
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            
+            if (monthlyChart) {
+                monthlyChart.destroy();
+            }
+
+            const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            const datasets = [];
+
+            Object.keys(calculatedPL).forEach((business, index) => {
+                const data = months.map((_, monthIndex) => 
+                    calculatedPL[business][monthIndex + 1].operatingProfit
+                );
+                
+                const colors = ['#3498db', '#e74c3c', '#f39c12', '#9b59b6'];
+                
+                datasets.push({
+                    label: businessNames[business],
+                    data: data,
+                    borderColor: colors[index],
+                    backgroundColor: colors[index] + '20',
+                    tension: 0.4
+                });
+            });
+
+            monthlyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '営業利益 (万円)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 統合PL表
+        function renderIntegratedTable() {
+            const tbody = document.getElementById('integratedTableBody');
+            tbody.innerHTML = '';
+
+            Object.keys(calculatedPL).forEach(business => {
+                addIntegratedRow(tbody, businessNames[business], Array(12).fill(''), 'business-header');
+                
+                const revenues = Array.from({length: 12}, (_, i) => 
+                    formatNumber(calculatedPL[business][i + 1].revenue)
+                );
+                addIntegratedRow(tbody, '　売上高', revenues);
+                
+                const profits = Array.from({length: 12}, (_, i) => 
+                    formatNumber(calculatedPL[business][i + 1].operatingProfit)
+                );
+                addIntegratedRow(tbody, '　営業利益', profits);
+            });
+
+            addIntegratedRow(tbody, '=== 全社合計 ===', Array(12).fill(''), 'total-row');
+            
+            const totalRevenues = Array.from({length: 12}, (_, month) => {
+                let total = 0;
+                Object.keys(calculatedPL).forEach(business => {
+                    total += calculatedPL[business][month + 1].revenue;
+                });
+                return formatNumber(total);
+            });
+            addIntegratedRow(tbody, '　合計売上', totalRevenues, 'total-row');
+            
+            const totalProfits = Array.from({length: 12}, (_, month) => {
+                let total = 0;
+                Object.keys(calculatedPL).forEach(business => {
+                    total += calculatedPL[business][month + 1].operatingProfit;
+                });
+                return formatNumber(total);
+            });
+            addIntegratedRow(tbody, '　合計営業利益', totalProfits, 'total-row');
+        }
+
+        // 統合テーブル行追加
+        function addIntegratedRow(tbody, label, values, className = '') {
+            const row = document.createElement('tr');
+            if (className) row.className = className;
+            
+            row.innerHTML = `
+                <td class="metric-label">${label}</td>
+                ${values.map(value => `<td>${value}</td>`).join('')}
+            `;
+            tbody.appendChild(row);
+        }
+
+        // 詳細レポートエクスポート
+        function exportDashboardReport() {
+            if (!businessData || !calculatedPL) {
+                alert('データが読み込まれていません。');
+                return;
+            }
+            
+            let csv = 'Category,Business,Month,Revenue,Operating_Profit,Profit_Margin\n';
+            
+            Object.keys(calculatedPL).forEach(business => {
+                const businessName = businessNames[business];
+                
+                for (let month = 1; month <= 12; month++) {
+                    const data = calculatedPL[business][month];
+                    const profitMargin = data.revenue > 0 ? 
+                        ((data.operatingProfit / data.revenue) * 100).toFixed(2) : '0';
+                    
+                    csv += `Detail,${businessName},${month}月,${data.revenue},${data.operatingProfit},${profitMargin}%\n`;
+                }
+            });
+            
+            const dataBlob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `integrated_dashboard_report_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            alert('統合分析レポートをエクスポートしました！');
+        }
+
+        // 数値フォーマット
+        function formatNumber(num) {
+            if (num === 0) return '0';
+            if (num === undefined || num === null) return '-';
+            return num.toLocaleString();
+        }
+
+        // 初期化実行
+        init();
+    </script>
+</body>
+</html>
