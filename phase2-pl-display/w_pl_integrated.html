@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>W事業部PLシミュレーター（連携機能付き）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #3182ce;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            color: #4a5568;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        
+        .profit-summary {
+            color: #059669;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .linkage-status {
+            background: #f0fff4;
+            border: 2px solid #48bb78;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .linkage-status.warning {
+            background: #fffcf0;
+            border-color: #f6ad55;
+        }
+
+        .linkage-status.error {
+            background: #fef2f2;
+            border-color: #e53e3e;
+        }
+        
+        .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .load-button {
+            background: linear-gradient(135deg, #3182ce, #2c5aa0);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .nav-links {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .nav-link {
+            color: #3182ce;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 0 15px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            background: #3182ce;
+            color: white;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .action-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn.green {
+            background: #48bb78;
+            color: white;
+        }
+
+        .action-btn.blue {
+            background: #4299e1;
+            color: white;
+        }
+
+        .action-btn.orange {
+            background: #f6ad55;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .pl-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .pl-table th,
+        .pl-table td {
+            border: 1px solid #e2e8f0;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .pl-table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .pl-table .item-id {
+            font-family: monospace;
+            font-weight: bold;
+            width: 40px;
+        }
+        
+        .pl-table .item-name {
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .pl-table .amount {
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        .bg-orange { background-color: #fed7aa; }
+        .bg-blue { background-color: #bfdbfe; }
+        .bg-green { background-color: #bbf7d0; }
+        .bg-gray { background-color: #f3f4f6; }
+        
+        .text-green { color: #059669; }
+        .text-red { color: #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <div class="header">
+            <h1>W事業部PLシミュレーター（連携機能付き）</h1>
+            <div class="subtitle">売上レンジ別固定金額方式・支払手数料段階制・Bレポート項目ID準拠</div>
+            <div class="profit-summary" id="profit-summary">
+                営業利益 ---万円（営業利益率 ---%）・連携機能対応
+            </div>
+        </div>
+
+        <!-- 連携状態表示 -->
+        <div id="linkage-status" class="linkage-status warning">
+            <strong>データ連携:</strong> <span id="status-text">連携データ読み込み待機中</span>
+        </div>
+
+        <!-- ナビゲーションリンク -->
+        <div class="nav-links">
+            <a href="../index.html" class="nav-link">メインメニュー</a>
+            <a href="../pl_simulator_option_a.html" class="nav-link">Option A入力系</a>
+            <a href="sr_pl_integrated.html" class="nav-link">SR事業部PL</a>
+            <a href="../phase3-dashboard/" class="nav-link">統合ダッシュボード</a>
+        </div>
+
+        <!-- メインコンテンツ -->
+        <div class="main-content">
+            <button class="load-button" onclick="loadLinkageData()">連携データを読み込み</button>
+            
+            <div class="info-box">
+                <h3>項目ID体系・計算仕様</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.85rem;">
+                    <div><strong>項目ID A-E:</strong> 基本PL構造</div>
+                    <div><strong>項目ID 1-19:</strong> 詳細販管費</div>
+                    <div><strong>項目ID 15:</strong> 支払手数料（6%/8%段階）</div>
+                    <div><strong>原価率:</strong> 29.964%</div>
+                </div>
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table class="pl-table" id="pl-table">
+                    <!-- JavaScript で生成 -->
+                </table>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="action-btn green" onclick="exportData()">データエクスポート</button>
+                <button class="action-btn blue" onclick="sendToDashboard()">ダッシュボードに送信</button>
+                <button class="action-btn orange" onclick="openInputSystem()">入力システムを開く</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 基本データ
+        const monthNames = ['7月', '8月', '9月', '10月', '11月', '12月', '1月', '2月', '3月', '4月', '5月', '6月'];
+        const baseSales = [887, 500, 670, 1175, 1258, 2331, 713, 772, 866, 824, 608, 923];
+        
+        // 売上レンジ別人件費固定金額設定
+        const personnelRanges = [
+            { min: 0, max: 599, amount: 201 },
+            { min: 600, max: 699, amount: 208.5 },
+            { min: 700, max: 799, amount: 214 },
+            { min: 800, max: 999, amount: 221 },
+            { min: 1000, max: 1199, amount: 237 },
+            { min: 1200, max: 1399, amount: 256 },
+            { min: 1400, max: 1599, amount: 275 },
+            { min: 1600, max: 1799, amount: 294 },
+            { min: 1800, max: 1999, amount: 324 },
+            { min: 2000, max: 2199, amount: 354 },
+            { min: 2200, max: 2399, amount: 384 },
+            { min: 2400, max: 9999, amount: 424 }
+        ];
+
+        // Bレポート項目ID定義
+        const bReportItems = [
+            {id: "A", name: "売上高_W", category: "売上"},
+            {id: "B", name: "仕入_W", category: "売上"},
+            {id: "C", name: "売上総損益", category: "売上"},
+            {id: "1", name: "人件費統合", category: "販管費"},
+            {id: "2", name: "法定福利費", category: "販管費"},
+            {id: "5", name: "地代家賃", category: "販管費"},
+            {id: "8", name: "広告宣伝費", category: "販管費"},
+            {id: "15", name: "支払手数料", category: "販管費"},
+            {id: "D", name: "販売管理費 計", category: "計算"},
+            {id: "E", name: "営業利益", category: "計算"}
+        ];
+
+        // 現在の状態
+        let currentSales = [...baseSales];
+        let currentAdvertising = 30;
+        let results = null;
+
+        // 初期化
+        function initialize() {
+            loadLinkageData();
+            calculate();
+        }
+
+        // 売上レンジ別人件費取得
+        function getPersonnelAmount(salesAmount) {
+            for (const range of personnelRanges) {
+                if (salesAmount >= range.min && salesAmount <= range.max) {
+                    return range.amount;
+                }
+            }
+            return 201;
+        }
+
+        // 支払手数料計算（段階制）
+        function calculateFees(salesAmount) {
+            const rate = salesAmount <= 999 ? 0.06 : 0.08;
+            return Math.round(salesAmount * rate);
+        }
+
+        // 月次PL計算
+        function calculateMonthlyPL(monthIndex, salesAmount) {
+            const cogsRate = 0.29964;
+            const cogs = Math.round(salesAmount * cogsRate);
+            const grossProfit = salesAmount - cogs;
+            
+            const personnel = Math.round(getPersonnelAmount(salesAmount));
+            const welfare = Math.round(personnel * 0.1283);
+            const rent = Math.round(3084 / 12); // 年間地代家賃を月割り
+            const advertising = currentAdvertising;
+            const fees = calculateFees(salesAmount);
+            const others = 85; // その他月額固定費
+
+            const totalExpenses = personnel + welfare + rent + advertising + fees + others;
+            const operatingProfit = grossProfit - totalExpenses;
+
+            return {
+                'A': salesAmount,
+                'B': cogs,
+                'C': grossProfit,
+                '1': personnel,
+                '2': welfare,
+                '5': rent,
+                '8': advertising,
+                '15': fees,
+                'others': others,
+                'D': totalExpenses,
+                'E': operatingProfit
+            };
+        }
+
+        // 年間計算
+        function calculate() {
+            const monthly = currentSales.map((sales, i) => calculateMonthlyPL(i, sales));
+            
+            const annual = {};
+            ['A', 'B', 'C', '1', '2', '5', '8', '15', 'D', 'E'].forEach(id => {
+                annual[id] = monthly.reduce((sum, m) => sum + m[id], 0);
+            });
+
+            results = { monthly, annual };
+            
+            updateProfitSummary();
+            updatePLTable();
+        }
+
+        // 利益サマリー更新
+        function updateProfitSummary() {
+            if (!results) return;
+            
+            const profit = results.annual.E;
+            const rate = (profit / results.annual.A * 100).toFixed(1);
+            
+            document.getElementById('profit-summary').innerHTML = `
+                営業利益 ${formatNumber(profit)}万円（営業利益率 ${rate}%）・連携機能対応
+            `;
+        }
+
+        // PLテーブル更新
+        function updatePLTable() {
+            if (!results) return;
+            
+            const table = document.getElementById('pl-table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th class="item-id">ID</th>
+                        <th class="item-name">項目</th>
+                        ${monthNames.map(month => `<th>${month}</th>`).join('')}
+                        <th style="background: #fed7aa;">年間計</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${['A', 'B', 'C'].map(id => {
+                        const item = bReportItems.find(item => item.id === id);
+                        return `
+                            <tr class="bg-orange">
+                                <td class="item-id bg-orange">${id}</td>
+                                <td class="item-name">${item.name}</td>
+                                ${results.monthly.map(m => `<td class="amount">${formatNumber(m[id])}</td>`).join('')}
+                                <td class="amount" style="background: #fed7aa;">${formatNumber(results.annual[id])}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                    <tr><td colspan="14" style="border-top: 2px solid #6b7280; padding: 2px;"></td></tr>
+                    ${['1', '2', '5', '8', '15'].map(id => {
+                        const item = bReportItems.find(item => item.id === id);
+                        return `
+                            <tr class="bg-blue">
+                                <td class="item-id bg-blue">${id}</td>
+                                <td class="item-name">${item.name}</td>
+                                ${results.monthly.map(m => `<td class="amount">${formatNumber(m[id])}</td>`).join('')}
+                                <td class="amount" style="background: #bfdbfe;">${formatNumber(results.annual[id])}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                    <tr class="bg-gray">
+                        <td class="item-id bg-gray">他</td>
+                        <td class="item-name">その他月額固定費</td>
+                        ${results.monthly.map(m => `<td class="amount">${formatNumber(m.others)}</td>`).join('')}
+                        <td class="amount bg-gray">${formatNumber(results.monthly.reduce((sum, m) => sum + m.others, 0))}</td>
+                    </tr>
+                    <tr><td colspan="14" style="border-top: 2px solid #6b7280; padding: 2px;"></td></tr>
+                    ${['D', 'E'].map(id => {
+                        const item = bReportItems.find(item => item.id === id);
+                        const colorClass = id === 'E' ? (results.annual[id] >= 0 ? 'text-green' : 'text-red') : '';
+                        return `
+                            <tr class="bg-green">
+                                <td class="item-id bg-green">${id}</td>
+                                <td class="item-name">${item.name}</td>
+                                ${results.monthly.map(m => `<td class="amount ${colorClass}">${formatNumber(m[id])}</td>`).join('')}
+                                <td class="amount ${colorClass}" style="background: #bbf7d0;">${formatNumber(results.annual[id])}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            `;
+        }
+
+        // 連携データ読み込み
+        function loadLinkageData() {
+            try {
+                const wSalesData = localStorage.getItem('w_sales_data');
+                const wSettings = localStorage.getItem('w_pl_settings');
+                
+                if (wSalesData && wSettings) {
+                    const salesData = JSON.parse(wSalesData);
+                    const settings = JSON.parse(wSettings);
+                    
+                    currentSales = salesData.monthlySales;
+                    currentAdvertising = settings.advertising;
+                    
+                    updateLinkageStatus('success', '✅ 連携データを正常に読み込みました');
+                    
+                    calculate();
+                } else {
+                    updateLinkageStatus('warning', '⚠️ 連携データが見つかりません（デフォルト値で表示）');
+                    calculate();
+                }
+            } catch (error) {
+                updateLinkageStatus('error', '❌ 連携データの読み込みに失敗しました');
+                console.error('連携データ読み込みエラー:', error);
+                calculate();
+            }
+        }
+
+        // 連携状態更新
+        function updateLinkageStatus(status, message) {
+            const statusDiv = document.getElementById('linkage-status');
+            const statusText = document.getElementById('status-text');
+            
+            statusDiv.className = `linkage-status ${status}`;
+            statusText.textContent = message;
+        }
+
+        // データエクスポート
+        function exportData() {
+            if (!results) return;
+            
+            const exportData = {
+                timestamp: new Date().toISOString(),
+                department: 'W',
+                currentSales,
+                currentAdvertising,
+                results,
+                calculationSpecs: {
+                    cogsRate: 0.29964,
+                    personnelMethod: 'fixed_amount_by_sales_range',
+                    feesMethod: 'tiered_rate_6_8_percent'
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'w_pl_linkage_data.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ダッシュボードに送信
+        function sendToDashboard() {
+            if (!results) return;
+            
+            localStorage.setItem('w_pl_results', JSON.stringify({
+                department: 'W',
+                annual: results.annual,
+                monthly: results.monthly,
+                settings: { advertising: currentAdvertising },
+                timestamp: new Date().toISOString()
+            }));
+
+            window.open('../phase3-dashboard/', '_blank');
+            alert('W事業部PLデータをダッシュボードに送信しました');
+        }
+
+        // 入力システムを開く
+        function openInputSystem() {
+            window.open('../pl_simulator_option_a.html', '_blank');
+        }
+
+        // 数値フォーマット
+        function formatNumber(num) {
+            return Math.round(num).toLocaleString();
+        }
+
+        // 初期化実行
+        window.onload = initialize;
+    </script>
+</body>
+</html>
