@@ -302,6 +302,14 @@
         .export-btn.sr-send:hover {
             box-shadow: 0 10px 25px rgba(229, 62, 62, 0.3);
         }
+
+        .export-btn.w-send {
+            background: linear-gradient(135deg, #3182ce, #2c5aa0);
+        }
+
+        .export-btn.w-send:hover {
+            box-shadow: 0 10px 25px rgba(49, 130, 206, 0.3);
+        }
         
         .progress-indicator {
             text-align: center;
@@ -510,6 +518,14 @@
                             <input type="number" id="w-advertising" value="50" onchange="calculateW()">
                         </div>
                     </div>
+                </div>
+
+                <!-- W専用データ送信ボタン -->
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="export-btn w-send" onclick="sendWDataToPLSystem()" 
+                            style="background: linear-gradient(135deg, #3182ce, #2c5aa0);">
+                        WデータをPLシステムに送信
+                    </button>
                 </div>
             </div>
 
@@ -791,6 +807,38 @@
             }
         }
 
+        // W事業部データをPLシステムに送信する新機能
+        function sendWDataToPLSystem() {
+            try {
+                // Wの売上データを保存
+                const wSalesData = {
+                    monthlySales: currentData.w.sales,
+                    timestamp: new Date().toISOString()
+                };
+
+                const wSettings = {
+                    advertising: currentData.w.variables.advertising
+                };
+
+                // localStorage に保存
+                localStorage.setItem('w_sales_data', JSON.stringify(wSalesData));
+                localStorage.setItem('w_pl_settings', JSON.stringify(wSettings));
+
+                // 状態表示を更新
+                updateLinkageStatus('success', '✅ Wデータを正常に送信しました');
+
+                // 成功メッセージ
+                const annual = currentData.w.sales.reduce((sum, val) => sum + val, 0);
+                alert('WデータをPLシステムに送信しました！\n\n' +
+                      '年間合計: ' + formatNumber(annual) + '万円\n' +
+                      '送信時刻: ' + new Date().toLocaleTimeString());
+
+            } catch (error) {
+                updateLinkageStatus('error', '❌ Wデータ送信に失敗しました');
+                alert('Wデータ送信に失敗しました: ' + error.message);
+            }
+        }
+
         // 連携状態更新
         function updateLinkageStatus(status, message) {
             const statusDiv = document.getElementById('linkage-status');
@@ -1039,6 +1087,139 @@
             generateRCDTable();
         }
 
+        function applyRCTargetRate() {
+            const targetRate = parseFloat(document.getElementById('rc-target-rate').value) || 0;
+            currentData.rc.variations = referenceData.RC.map(ref => {
+                const targetSales = Math.round(ref * (1 + targetRate / 100));
+                return targetSales - currentData.rc.baseSales;
+            });
+            currentData.rc.targetRate = targetRate;
+            document.getElementById('rc-current-rate').textContent = targetRate;
+            calculateRC();
+            generateRCTable();
+        }
+
+        // ダッシュボード更新
+        function updateDashboard() {
+            // 各事業部の年間合計計算
+            const srTotal = months.map((_, i) => {
+                return Object.values(currentData.sr.stores).reduce((sum, store) => sum + store[i], 0);
+            }).reduce((sum, val) => sum + val, 0);
+
+            const wTotal = currentData.w.sales.reduce((sum, val) => sum + val, 0);
+
+            const rcTotal = currentData.rc.variations.map(variation => 
+                currentData.rc.baseSales + variation
+            ).reduce((sum, val) => sum + val, 0);
+
+            const rcdTotal = currentData.rcd.purchases.map(purchase => 
+                Math.round(purchase * 2000 * 1.03)
+            ).reduce((sum, val) => sum + val, 0);
+
+            const totalRevenue = srTotal + wTotal + rcTotal + rcdTotal;
+
+            // 前年増減計算
+            const refTotals = {
+                SR: referenceData.SR.reduce((sum, val) => sum + val, 0),
+                W: referenceData.W.reduce((sum, val) => sum + val, 0),
+                RC: referenceData.RC.reduce((sum, val) => sum + val, 0),
+                RCD: referenceData.RCD.reduce((sum, val) => sum + val, 0)
+            };
+            const totalRefRevenue = refTotals.SR + refTotals.W + refTotals.RC + refTotals.RCD;
+            const totalDiff = totalRevenue - totalRefRevenue;
+
+            // ダッシュボード更新
+            document.getElementById('total-revenue').textContent = formatNumber(totalRevenue) + '万円';
+            document.getElementById('sr-total').textContent = formatNumber(srTotal) + '万円';
+            document.getElementById('w-total').textContent = formatNumber(wTotal) + '万円';
+            document.getElementById('rc-total').textContent = formatNumber(rcTotal) + '万円';
+            document.getElementById('rcd-total').textContent = formatNumber(rcdTotal) + '万円';
+            document.getElementById('total-diff').textContent = 
+                (totalDiff >= 0 ? '+' : '') + formatNumber(totalDiff) + '万円';
+        }
+
+        // エクスポート機能
+        function exportToURL() {
+            const params = new URLSearchParams();
+            params.append('data', JSON.stringify(currentData));
+            const url = window.location.origin + window.location.pathname + '?' + params.toString();
+            
+            navigator.clipboard.writeText(url).then(() => {
+                alert('URLがクリップボードにコピーされました！');
+            });
+        }
+
+        function exportToJSON() {
+            const exportData = {
+                timestamp: new Date().toISOString(),
+                data: currentData,
+                summary: {
+                    totalRevenue: getCurrentTotalRevenue(),
+                    breakdown: getCurrentBreakdown()
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'pl_simulator_data.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function getCurrentTotalRevenue() {
+            const srTotal = months.map((_, i) => {
+                return Object.values(currentData.sr.stores).reduce((sum, store) => sum + store[i], 0);
+            }).reduce((sum, val) => sum + val, 0);
+
+            const wTotal = currentData.w.sales.reduce((sum, val) => sum + val, 0);
+            const rcTotal = currentData.rc.variations.map(variation => 
+                currentData.rc.baseSales + variation
+            ).reduce((sum, val) => sum + val, 0);
+            const rcdTotal = currentData.rcd.purchases.map(purchase => 
+                Math.round(purchase * 2000 * 1.03)
+            ).reduce((sum, val) => sum + val, 0);
+
+            return srTotal + wTotal + rcTotal + rcdTotal;
+        }
+
+        function getCurrentBreakdown() {
+            const srTotal = months.map((_, i) => {
+                return Object.values(currentData.sr.stores).reduce((sum, store) => sum + store[i], 0);
+            }).reduce((sum, val) => sum + val, 0);
+
+            return {
+                SR: srTotal,
+                W: currentData.w.sales.reduce((sum, val) => sum + val, 0),
+                RC: currentData.rc.variations.map(variation => 
+                    currentData.rc.baseSales + variation
+                ).reduce((sum, val) => sum + val, 0),
+                RCD: currentData.rcd.purchases.map(purchase => 
+                    Math.round(purchase * 2000 * 1.03)
+                ).reduce((sum, val) => sum + val, 0)
+            };
+        }
+
+        // 初期化
+        function initialize() {
+            generateSRTable();
+            generateWTable();
+            generateRCTable();
+            generateRCDTable();
+            calculateSR();
+            calculateW();
+            calculateRC();
+            calculateRCD();
+        }
+
+        // ページ読み込み時に初期化実行
+        window.onload = initialize;
+    </script>
+</body>
+</html>RCDTable();
+        }
+
         function updateRCDFee(monthIndex, value) {
             currentData.rcd.fees[monthIndex] = parseInt(value) || 0;
             calculateRCD();
@@ -1067,6 +1248,9 @@
         }
 
         function calculateW() {
+            // 変数をデータに同期
+            currentData.w.variables.advertising = parseInt(document.getElementById('w-advertising').value) || 0;
+
             const annual = currentData.w.sales.reduce((sum, val) => sum + val, 0);
             const refTotal = referenceData.W.reduce((sum, val) => sum + val, 0);
             const diff = annual - refTotal;
@@ -1215,137 +1399,4 @@
                     break;
             }
             calculateRCD();
-            generateRCDTable();
-        }
-
-        function applyRCTargetRate() {
-            const targetRate = parseFloat(document.getElementById('rc-target-rate').value) || 0;
-            currentData.rc.variations = referenceData.RC.map(ref => {
-                const targetSales = Math.round(ref * (1 + targetRate / 100));
-                return targetSales - currentData.rc.baseSales;
-            });
-            currentData.rc.targetRate = targetRate;
-            document.getElementById('rc-current-rate').textContent = targetRate;
-            calculateRC();
-            generateRCTable();
-        }
-
-        // ダッシュボード更新
-        function updateDashboard() {
-            // 各事業部の年間合計計算
-            const srTotal = months.map((_, i) => {
-                return Object.values(currentData.sr.stores).reduce((sum, store) => sum + store[i], 0);
-            }).reduce((sum, val) => sum + val, 0);
-
-            const wTotal = currentData.w.sales.reduce((sum, val) => sum + val, 0);
-
-            const rcTotal = currentData.rc.variations.map(variation => 
-                currentData.rc.baseSales + variation
-            ).reduce((sum, val) => sum + val, 0);
-
-            const rcdTotal = currentData.rcd.purchases.map(purchase => 
-                Math.round(purchase * 2000 * 1.03)
-            ).reduce((sum, val) => sum + val, 0);
-
-            const totalRevenue = srTotal + wTotal + rcTotal + rcdTotal;
-
-            // 前年増減計算
-            const refTotals = {
-                SR: referenceData.SR.reduce((sum, val) => sum + val, 0),
-                W: referenceData.W.reduce((sum, val) => sum + val, 0),
-                RC: referenceData.RC.reduce((sum, val) => sum + val, 0),
-                RCD: referenceData.RCD.reduce((sum, val) => sum + val, 0)
-            };
-            const totalRefRevenue = refTotals.SR + refTotals.W + refTotals.RC + refTotals.RCD;
-            const totalDiff = totalRevenue - totalRefRevenue;
-
-            // ダッシュボード更新
-            document.getElementById('total-revenue').textContent = formatNumber(totalRevenue) + '万円';
-            document.getElementById('sr-total').textContent = formatNumber(srTotal) + '万円';
-            document.getElementById('w-total').textContent = formatNumber(wTotal) + '万円';
-            document.getElementById('rc-total').textContent = formatNumber(rcTotal) + '万円';
-            document.getElementById('rcd-total').textContent = formatNumber(rcdTotal) + '万円';
-            document.getElementById('total-diff').textContent = 
-                (totalDiff >= 0 ? '+' : '') + formatNumber(totalDiff) + '万円';
-        }
-
-        // エクスポート機能
-        function exportToURL() {
-            const params = new URLSearchParams();
-            params.append('data', JSON.stringify(currentData));
-            const url = window.location.origin + window.location.pathname + '?' + params.toString();
-            
-            navigator.clipboard.writeText(url).then(() => {
-                alert('URLがクリップボードにコピーされました！');
-            });
-        }
-
-        function exportToJSON() {
-            const exportData = {
-                timestamp: new Date().toISOString(),
-                data: currentData,
-                summary: {
-                    totalRevenue: getCurrentTotalRevenue(),
-                    breakdown: getCurrentBreakdown()
-                }
-            };
-            
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'pl_simulator_data.json';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function getCurrentTotalRevenue() {
-            const srTotal = months.map((_, i) => {
-                return Object.values(currentData.sr.stores).reduce((sum, store) => sum + store[i], 0);
-            }).reduce((sum, val) => sum + val, 0);
-
-            const wTotal = currentData.w.sales.reduce((sum, val) => sum + val, 0);
-            const rcTotal = currentData.rc.variations.map(variation => 
-                currentData.rc.baseSales + variation
-            ).reduce((sum, val) => sum + val, 0);
-            const rcdTotal = currentData.rcd.purchases.map(purchase => 
-                Math.round(purchase * 2000 * 1.03)
-            ).reduce((sum, val) => sum + val, 0);
-
-            return srTotal + wTotal + rcTotal + rcdTotal;
-        }
-
-        function getCurrentBreakdown() {
-            const srTotal = months.map((_, i) => {
-                return Object.values(currentData.sr.stores).reduce((sum, store) => sum + store[i], 0);
-            }).reduce((sum, val) => sum + val, 0);
-
-            return {
-                SR: srTotal,
-                W: currentData.w.sales.reduce((sum, val) => sum + val, 0),
-                RC: currentData.rc.variations.map(variation => 
-                    currentData.rc.baseSales + variation
-                ).reduce((sum, val) => sum + val, 0),
-                RCD: currentData.rcd.purchases.map(purchase => 
-                    Math.round(purchase * 2000 * 1.03)
-                ).reduce((sum, val) => sum + val, 0)
-            };
-        }
-
-        // 初期化
-        function initialize() {
-            generateSRTable();
-            generateWTable();
-            generateRCTable();
-            generateRCDTable();
-            calculateSR();
-            calculateW();
-            calculateRC();
-            calculateRCD();
-        }
-
-        // ページ読み込み時に初期化実行
-        window.onload = initialize;
-    </script>
-</body>
-</html>
+            generate
