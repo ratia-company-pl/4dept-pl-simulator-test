@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4事業部統合PLシミュレーター - Option A（機能別分割）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header-table {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .header-table td {
+            padding: 12px 20px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .title-cell {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-align: center;
+        }
+        
+        .subtitle-cell {
+            background: #f8fafc;
+            color: #4a5568;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        
+        .system-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .system-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 180px;
+        }
+        
+        .system-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+        }
+        
+        .system-btn.active {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            box-shadow: 0 15px 35px rgba(72, 187, 120, 0.4);
+        }
+        
+        .system-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        
+        .system-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .department-section {
+            background: #f8fafc;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--dept-color);
+        }
+        
+        .department-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .department-title::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background: var(--dept-color);
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .preset-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .preset-btn.green {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .preset-btn.orange {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .preset-btn.red {
+            background: #e53e3e;
+            color: white;
+        }
+        
+        .preset-btn.blue {
+            background: #4299e1;
+            color: white;
+        }
+        
+        .preset-btn.purple {
+            background: #805ad5;
+            color: white;
+        }
+        
+        .preset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .data-table th,
+        .data-table td {
+            border: 1px solid #e2e8f0;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .data-table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .data-table input {
+            width: 100%;
+            padding: 4px 6px;
+            border: none;
+            background: rgba(66, 153, 225, 0.1);
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+        
+        .data-table input:focus {
+            background: rgba(66, 153, 225, 0.2);
+            outline: none;
+        }
+        
+        .variable-controls {
+            background: #fffcf0;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #f6e05e;
+            margin-top: 10px;
+        }
+        
+        .variable-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 8px;
+        }
+        
+        .variable-item label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 2px;
+            line-height: 1.2;
+        }
+        
+        .variable-item input,
+        .variable-item select {
+            width: 100%;
+            padding: 3px 6px;
+            border: 1px solid #d2d6dc;
+            border-radius: 3px;
+            font-size: 0.7rem;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .result-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .export-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(72, 187, 120, 0.3);
+        }
+
+        .export-btn.sr-send {
+            background: linear-gradient(135deg, #e53e3e, #c53030);
+        }
+
+        .export-btn.sr-send:hover {
+            box-shadow: 0 10px 25px rgba(229, 62, 62, 0.3);
+        }
+        
+        .progress-indicator {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+        
+        .summary-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        
+        .summary-item {
+            font-size: 0.85rem;
+        }
+        
+        .summary-item strong {
+            color: #1e40af;
+        }
+        
+        .annual-summary {
+            text-align: right;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--dept-color);
+            margin-bottom: 15px;
+        }
+
+        .linkage-status {
+            background: #f0fff4;
+            border: 2px solid #48bb78;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .linkage-status.warning {
+            background: #fffcf0;
+            border-color: #f6ad55;
+        }
+
+        .linkage-status.error {
+            background: #fef2f2;
+            border-color: #e53e3e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- コンパクトヘッダー -->
+        <table class="header-table">
+            <tr>
+                <td class="title-cell">4事業部統合PLシミュレーター</td>
+            </tr>
+            <tr>
+                <td class="subtitle-cell">Option A - 機能別分割アプローチ（integrated_pl_engine.tsx移植版）</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 20px;">
+                    <div class="system-buttons">
+                        <button class="system-btn active" onclick="showSystem('input')">
+                            システム1: 事業部詳細売上入力
+                        </button>
+                        <button class="system-btn" onclick="showSystem('display')">
+                            システム2: 事業部別PL表示システム
+                        </button>
+                        <button class="system-btn" onclick="showSystem('dashboard')">
+                            システム3: 統合ダッシュボードシステム
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        </table>
+        
+        <!-- システム1: 事業部詳細売上入力 -->
+        <div id="input-system" class="system-content active">
+            <h2 style="margin-bottom: 15px; color: #2d3748; font-size: 1.1rem;">システム1: 4事業部売上入力</h2>
+            
+            <!-- 連携状態表示 -->
+            <div id="linkage-status" class="linkage-status warning">
+                <strong>データ連携:</strong> <span id="status-text">SRデータ送信準備完了</span>
+            </div>
+            
+            <!-- SR事業部 -->
+            <div class="department-section" style="--dept-color: #e53e3e;">
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                    <tr>
+                        <td style="font-size: 1.1rem; font-weight: 700; color: #2d3748; vertical-align: middle;">
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #e53e3e; border-radius: 50%; margin-right: 8px;"></span>
+                            SR事業部
+                        </td>
+                        <td style="text-align: right; font-size: 0.8rem; font-weight: 600; color: #e53e3e; vertical-align: middle;" id="sr-annual">
+                            年間合計: 0万円　前年増減: +0万円
+                        </td>
+                    </tr>
+                </table>
+                
+                <div class="summary-info">
+                    <div class="summary-item"><strong>店舗数:</strong> 6店舗</div>
+                    <div class="summary-item"><strong>仕入原価率:</strong> 27.2%</div>
+                    <div class="summary-item"><strong>人件費:</strong> 売上レンジ別係数</div>
+                    <div class="summary-item"><strong>特殊手当:</strong> 営業コミッション・賞与</div>
+                </div>
+                
+                <div class="preset-buttons">
+                    <button class="preset-btn green" onclick="applySRPreset('actual')">実績値セット</button>
+                    <button class="preset-btn orange" onclick="applySRPreset('50p')">店舗50万増</button>
+                    <button class="preset-btn orange" onclick="applySRPreset('100p')">店舗100万増</button>
+                    <button class="preset-btn red" onclick="applySRPreset('150p')">店舗150万増</button>
+                </div>
+                
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="sr-table">
+                        <!-- SR事業部テーブル（JavaScript で生成） -->
+                    </table>
+                </div>
+                
+                <div class="variable-controls">
+                    <div class="variable-grid">
+                        <div class="variable-item">
+                            <label>営業手当<span style="color: #718096; font-size: 0.65rem;"> 2/6/10月</span></label>
+                            <input type="number" id="sr-commission" value="100" onchange="calculateSR()">
+                        </div>
+                        <div class="variable-item">
+                            <label>6月賞与</label>
+                            <input type="number" id="sr-bonus6" value="100" onchange="calculateSR()">
+                        </div>
+                        <div class="variable-item">
+                            <label>12月賞与</label>
+                            <input type="number" id="sr-bonus12" value="0" onchange="calculateSR()">
+                        </div>
+                        <div class="variable-item">
+                            <label>広告宣伝費</label>
+                            <input type="number" id="sr-advertising" value="30" onchange="calculateSR()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SR専用データ送信ボタン -->
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="export-btn sr-send" onclick="sendSRDataToPLSystem()">
+                        SRデータをPLシステムに送信
+                    </button>
+                </div>
+            </div>
+
+            <!-- W事業部 -->
+            <div class="department-section" style="--dept-color: #3182ce;">
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                    <tr>
+                        <td style="font-size: 1.1rem; font-weight: 700; color: #2d3748; vertical-align: middle;">
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #3182ce; border-radius: 50%; margin-right: 8px;"></span>
+                            W事業部
+                        </td>
+                        <td style="text-align: right; font-size: 0.8rem; font-weight: 600; color: #3182ce; vertical-align: middle;" id="w-annual">
+                            年間合計: 0万円　前年増減: +0万円
+                        </td>
+                    </tr>
+                </table>
+                
+                <div class="summary-info">
+                    <div class="summary-item"><strong>入力方式:</strong> 統合月別売上</div>
+                    <div class="summary-item"><strong>仕入原価率:</strong> 29.96%</div>
+                    <div class="summary-item"><strong>人件費:</strong> 売上レンジ別固定金額</div>
+                    <div class="summary-item"><strong>支払手数料:</strong> 売上連動(6%/8%)</div>
+                </div>
+                
+                <div class="preset-buttons">
+                    <button class="preset-btn green" onclick="applyWPreset('actual')">実績値セット</button>
+                    <button class="preset-btn blue" onclick="applyWPreset('200')">毎月200万増</button>
+                    <button class="preset-btn purple" onclick="applyWPreset('400')">毎月400万増</button>
+                    <button class="preset-btn red" onclick="applyWPreset('600')">毎月600万増</button>
+                </div>
+                
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="w-table">
+                        <!-- W事業部テーブル（JavaScript で生成） -->
+                    </table>
+                </div>
+                
+                <div class="variable-controls">
+                    <div class="variable-grid">
+                        <div class="variable-item">
+                            <label>広告宣伝費</label>
+                            <input type="number" id="w-advertising" value="50" onchange="calculateW()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RC卸事業部 -->
+            <div class="department-section" style="--dept-color: #38a169;">
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                    <tr>
+                        <td style="font-size: 1.1rem; font-weight: 700; color: #2d3748; vertical-align: middle;">
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #38a169; border-radius: 50%; margin-right: 8px;"></span>
+                            RC卸
+                        </td>
+                        <td style="text-align: right; font-size: 0.8rem; font-weight: 600; color: #38a169; vertical-align: middle;" id="rc-annual">
+                            年間合計: 0万円　前年増減: +0万円
+                        </td>
+                    </tr>
+                </table>
+                
+                <div class="summary-info">
+                    <div class="summary-item"><strong>基準売上:</strong> 1550万円/月</div>
+                    <div class="summary-item"><strong>仕入原価率:</strong> 35.2%</div>
+                    <div class="summary-item"><strong>人件費:</strong> 固定50万円/月</div>
+                    <div class="summary-item"><strong>計算方式:</strong> 基準+増減額</div>
+                </div>
+                
+                <div class="preset-buttons">
+                    <button class="preset-btn blue" onclick="applyRCPreset('standard')">標準設定（全月1550万円）</button>
+                    <button class="preset-btn green" onclick="applyRCPreset('actual')">実績パターン</button>
+                    <button class="preset-btn green" onclick="applyRCPreset('growth')">成長モデル（固定4%）</button>
+                    <button class="preset-btn purple" onclick="applyRCPreset('improvement')">大幅改善モデル（固定7%）</button>
+                </div>
+                
+                <div style="background: #ebf8ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 0.9rem;">目標売上設定(%):</span>
+                    <input type="number" id="rc-target-rate" value="0" step="0.1" min="0" max="50" 
+                           style="width: 80px; padding: 5px; text-align: center; border: 1px solid #cbd5e0; border-radius: 4px;"
+                           onchange="applyRCTargetRate()">
+                    <span style="font-size: 0.9rem;">%</span>
+                    <div style="font-size: 0.9rem; color: #3182ce; font-weight: 600;">
+                        現在の設定: カスタム設定 <span id="rc-current-rate">0</span>%
+                    </div>
+                </div>
+                
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="rc-table">
+                        <!-- RC卸事業部テーブル（JavaScript で生成） -->
+                    </table>
+                </div>
+                
+                <div class="variable-controls">
+                    <div class="variable-grid">
+                        <div class="variable-item">
+                            <label>広告宣伝費</label>
+                            <input type="number" id="rc-advertising" value="40" onchange="calculateRC()">
+                        </div>
+                        <div class="variable-item">
+                            <label>展示会関連費</label>
+                            <input type="number" id="rc-exhibition" value="20" onchange="calculateRC()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RCD社事業部 -->
+            <div class="department-section" style="--dept-color: #805ad5;">
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                    <tr>
+                        <td style="font-size: 1.1rem; font-weight: 700; color: #2d3748; vertical-align: middle;">
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #805ad5; border-radius: 50%; margin-right: 8px;"></span>
+                            RCD社
+                        </td>
+                        <td style="text-align: right; font-size: 0.8rem; font-weight: 600; color: #805ad5; vertical-align: middle;" id="rcd-annual">
+                            年間合計: 0万円　前年増減: +0万円
+                        </td>
+                    </tr>
+                </table>
+                
+                <div class="summary-info">
+                    <div class="summary-item"><strong>仕入単価:</strong> 2,000万円/本</div>
+                    <div class="summary-item"><strong>利益率:</strong> 3%固定</div>
+                    <div class="summary-item"><strong>支払手数料:</strong> 1件90.6万円×回数</div>
+                    <div class="summary-item"><strong>外部委託:</strong> 人件費・経費0円</div>
+                </div>
+                
+                <div class="preset-buttons">
+                    <button class="preset-btn red" onclick="applyRCDPreset('zero')">0設定（手数料のみ0回）</button>
+                    <button class="preset-btn green" onclick="applyRCDPreset('actual')">実績パターン</button>
+                    <button class="preset-btn blue" onclick="applyRCDPreset('standard')">標準設定（月8本）</button>
+                    <button class="preset-btn orange" onclick="applyRCDPreset('seven')">月7本設定</button>
+                    <button class="preset-btn purple" onclick="applyRCDPreset('six')">月6本設定</button>
+                </div>
+                
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="rcd-table">
+                        <!-- RCD社事業部テーブル（JavaScript で生成） -->
+                    </table>
+                </div>
+            </div>
+            
+            <div class="progress-indicator">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 100%;"></div>
+                </div>
+                <p>完成度: 100% - integrated_pl_engine.tsx完全移植完了</p>
+            </div>
+        </div>
+        
+        <!-- システム2: 事業部別PL表示システム -->
+        <div id="display-system" class="system-content">
+            <h2 style="margin-bottom: 25px; color: #2d3748;">システム2: 事業部別PL表示システム</h2>
+            
+            <div id="pl-display">
+                <p style="color: #718096; text-align: center; margin: 40px 0;">
+                    入力データを基にした事業部別PL計算結果がここに表示されます。<br>
+                    （PL計算機能は次の開発フェーズで実装予定）
+                </p>
+            </div>
+            
+            <div class="progress-indicator">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 15%;"></div>
+                </div>
+                <p>完成度: 15% - 基本構造のみ実装</p>
+            </div>
+        </div>
+        
+        <!-- システム3: 統合ダッシュボードシステム -->
+        <div id="dashboard-system" class="system-content">
+            <h2 style="margin-bottom: 25px; color: #2d3748;">システム3: 統合ダッシュボードシステム</h2>
+            
+            <div class="results-grid" id="dashboard-results">
+                <div class="result-card">
+                    <div class="result-label">統合売上高</div>
+                    <div class="result-value" id="total-revenue">0万円</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">SR事業部</div>
+                    <div class="result-value" id="sr-total">0万円</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">W事業部</div>
+                    <div class="result-value" id="w-total">0万円</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">RC卸事業部</div>
+                    <div class="result-value" id="rc-total">0万円</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">RCD社事業部</div>
+                    <div class="result-value" id="rcd-total">0万円</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">前年増減</div>
+                    <div class="result-value" id="total-diff">+0万円</div>
+                </div>
+            </div>
+            
+            <div class="export-section">
+                <button class="export-btn" onclick="exportToURL()">URLパラメータでエクスポート</button>
+                <button class="export-btn" onclick="exportToJSON()">JSON形式でエクスポート</button>
+            </div>
+            
+            <div class="progress-indicator">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 60%;"></div>
+                </div>
+                <p>完成度: 60% - 基本表示・エクスポート機能実装済み</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 基本データ（integrated_pl_engine.tsx から移植）
+        const months = ['7月', '8月', '9月', '10月', '11月', '12月', '1月', '2月', '3月', '4月', '5月', '6月'];
+        
+        // 参考データ（前年実績）
+        const referenceData = {
+            SR: [2236, 2916, 2927, 2810, 2544, 2663, 3008, 2324, 2403, 2602, 2228, 2721],
+            W: [886, 500, 669, 1174, 1257, 2331, 712, 772, 865, 824, 608, 923],
+            RC: [1947, 1645, 1530, 1730, 1165, 1846, 1475, 1585, 1241, 1173, 1602, 1420],
+            RCD: [11037, 14297, 11504, 14664, 12507, 14920, 13661, 15455, 14439, 15857, 15478, 16360]
+        };
+
+        // 現在のデータ状態
+        let currentData = {
+            sr: {
+                stores: {
+                    '清水店': [416, 397, 421, 502, 471, 544, 567, 476, 355, 408, 299, 346],
+                    '静岡店': [369, 386, 600, 535, 285, 437, 351, 270, 369, 391, 256, 242],
+                    '掛川店': [284, 375, 508, 278, 394, 394, 377, 309, 248, 469, 448, 535],
+                    '市野店': [328, 547, 723, 520, 528, 607, 574, 318, 714, 657, 700, 600],
+                    '佐鳴台店': [349, 719, 247, 433, 308, 265, 516, 311, 222, 293, 272, 379],
+                    '広島店': [490, 493, 427, 542, 558, 416, 622, 641, 496, 385, 253, 620]
+                },
+                variables: {
+                    commission: 100,
+                    bonus6: 100,
+                    bonus12: 0,
+                    advertising: 30
+                }
+            },
+            w: {
+                sales: [886, 500, 669, 1174, 1257, 2331, 712, 772, 865, 824, 608, 923],
+                variables: {
+                    advertising: 50
+                }
+            },
+            rc: {
+                baseSales: 1550,
+                variations: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                targetRate: 0,
+                variables: {
+                    advertising: 40,
+                    exhibition: 20
+                }
+            },
+            rcd: {
+                purchases: [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+                fees: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            }
+        };
+
+        // システム切り替え
+        function showSystem(systemType) {
+            // ボタンのアクティブ状態を更新
+            document.querySelectorAll('.system-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // コンテンツの表示を切り替え
+            document.querySelectorAll('.system-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(systemType + '-system').classList.add('active');
+            
+            // システム表示時に更新
+            if (systemType === 'dashboard') {
+                updateDashboard();
+            }
+        }
+
+        // 数値フォーマット
+        function formatNumber(num) {
+            return Math.round(num).toLocaleString();
+        }
+
+        // SRデータをPLシステムに送信する新機能
+        function sendSRDataToPLSystem() {
+            try {
+                // SRの月次売上合計を計算
+                const monthlySales = months.map((_, i) => {
+                    return Object.values(currentData.sr.stores).reduce((sum, store) => sum + store[i], 0);
+                });
+
+                // SRデータを保存
+                const srSalesData = {
+                    monthlySales: monthlySales,
+                    timestamp: new Date().toISOString()
+                };
+
+                const srSettings = {
+                    commission: currentData.sr.variables.commission,
+                    bonus6: currentData.sr.variables.bonus6,
+                    bonus12: currentData.sr.variables.bonus12,
+                    advertising: currentData.sr.variables.advertising
+                };
+
+                // localStorage に保存
+                localStorage.setItem('sr_sales_data', JSON.stringify(srSalesData));
+                localStorage.setItem('sr_pl_settings', JSON.stringify(srSettings));
+
+                // 状態表示を更新
+                updateLinkageStatus('success', '✅ SRデータを正常に送信しました');
+
+                // 成功メッセージ
+                alert('SRデータをPLシステムに送信しました！\n\n' +
+                      '年間合計: ' + formatNumber(monthlySales.reduce((sum, val) => sum + val, 0)) + '万円\n' +
+                      '送信時刻: ' + new Date().toLocaleTimeString());
+
+            } catch (error) {
+                updateLinkageStatus('error', '❌ データ送信に失敗しました');
+                alert('データ送信に失敗しました: ' + error.message);
+            }
+        }
+
+        // 連携状態更新
+        function updateLinkageStatus(status, message) {
+            const statusDiv = document.getElementById('linkage-status');
+            const statusText = document.getElementById('status-text');
+            
+            statusDiv.className = `linkage-status ${status === 'error' ? 'error' : ''}`;
+            statusText.textContent = message;
+        }
+
+        // SR事業部テーブル生成
+        function generateSRTable() {
+            const table = document.getElementById('sr-table');
+            let html = `
+                <thead>
+                    <tr style="background: #f7fafc;">
+                        <th style="width: 100px;">店舗</th>
+                        <th style="width: 60px;">項目</th>
+                        ${months.map(month => `<th style="width: 80px;">${month}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
+            // 合計行
+            const totals = months.map((_, i) => {
+                return Object.values(currentData.sr.stores).reduce((sum, store) => sum + store[i], 0);
+            });
+
+            html += `
+                <tr style="background: #ebf8ff; font-weight: 600;">
+                    <td rowspan="3" style="background: #3182ce; color: white;">合計</td>
+                    <td style="color: #1e40af;">売上</td>
+                    ${totals.map(total => `<td style="color: #1e40af;"><strong>${formatNumber(total)}万円</strong></td>`).join('')}
+                </tr>
+                <tr style="background: #ebf8ff;">
+                    <td style="color: #059669;">増減</td>
+                    ${totals.map((total, i) => {
+                        const diff = total - referenceData.SR[i];
+                        const color = diff >= 0 ? '#059669' : '#dc2626';
+                        return `<td style="color: ${color}; font-weight: 600;">${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円</td>`;
+                    }).join('')}
+                </tr>
+                <tr style="background: #f3f4f6;">
+                    <td style="color: #6b7280;">参考</td>
+                    ${referenceData.SR.map(val => `<td style="color: #6b7280;">${formatNumber(val)}万円</td>`).join('')}
+                </tr>
+            `;
+
+            // 各店舗行
+            Object.entries(currentData.sr.stores).forEach(([storeName, values]) => {
+                html += `
+                    <tr style="background: white;">
+                        <td rowspan="2" style="font-weight: 600;">${storeName}</td>
+                        <td style="color: #3182ce; font-weight: 600;">売上</td>
+                        ${values.map((val, i) => `
+                            <td>
+                                <input type="number" value="${val}" 
+                                       onchange="updateSRStore('${storeName}', ${i}, this.value)"
+                                       style="background: rgba(59, 130, 246, 0.1);">
+                                <div style="font-size: 0.75rem; color: #6b7280; text-align: center;">${formatNumber(val)}</div>
+                            </td>
+                        `).join('')}
+                    </tr>
+                    <tr style="background: #f9fafb;">
+                        <td style="color: #6b7280;">参考</td>
+                        ${values.map(val => `<td style="color: #6b7280; font-size: 0.8rem;">${formatNumber(val)}</td>`).join('')}
+                    </tr>
+                `;
+            });
+
+            html += '</tbody>';
+            table.innerHTML = html;
+        }
+
+        // W事業部テーブル生成
+        function generateWTable() {
+            const table = document.getElementById('w-table');
+            let html = `
+                <thead>
+                    <tr style="background: #f7fafc;">
+                        <th style="width: 80px;">項目</th>
+                        ${months.map(month => `<th>${month}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background: white;">
+                        <td style="font-weight: 600; color: #3182ce;">売上</td>
+                        ${currentData.w.sales.map((val, i) => `
+                            <td>
+                                <input type="number" value="${val}" 
+                                       onchange="updateWSales(${i}, this.value)"
+                                       style="background: rgba(59, 130, 246, 0.1);">
+                                <div style="font-size: 0.75rem; color: #6b7280; text-align: center;">${formatNumber(val)}万円</div>
+                            </td>
+                        `).join('')}
+                    </tr>
+                    <tr style="background: white;">
+                        <td style="font-weight: 600;">増減</td>
+                        ${currentData.w.sales.map((val, i) => {
+                            const diff = val - referenceData.W[i];
+                            const color = diff >= 0 ? '#059669' : '#dc2626';
+                            return `<td style="color: ${color}; font-weight: 600; text-align: center;">${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円</td>`;
+                        }).join('')}
+                    </tr>
+                    <tr style="background: #f3f4f6;">
+                        <td style="color: #6b7280;">参考</td>
+                        ${referenceData.W.map(val => `<td style="color: #6b7280; text-align: center;">${formatNumber(val)}万円</td>`).join('')}
+                    </tr>
+                </tbody>
+            `;
+            table.innerHTML = html;
+        }
+
+        // RC卸事業部テーブル生成
+        function generateRCTable() {
+            const table = document.getElementById('rc-table');
+            let html = `
+                <thead>
+                    <tr style="background: #f7fafc;">
+                        <th style="width: 80px;">項目</th>
+                        ${months.map(month => `<th>${month}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background: white;">
+                        <td style="font-weight: 600; color: #3182ce;">増減</td>
+                        ${currentData.rc.variations.map((val, i) => `
+                            <td>
+                                <input type="number" value="${val}" 
+                                       onchange="updateRCVariation(${i}, this.value)"
+                                       style="background: rgba(59, 130, 246, 0.1);">
+                                <div style="font-size: 0.75rem; color: #6b7280; text-align: center;">${val >= 0 ? '+' : ''}${formatNumber(val)}万円</div>
+                            </td>
+                        `).join('')}
+                    </tr>
+                    <tr style="background: #f0fff4; border-left: 4px solid #059669;">
+                        <td style="font-weight: 600; color: #059669;">売上</td>
+                        ${currentData.rc.variations.map(val => `
+                            <td style="color: #059669; font-weight: 600; text-align: center;">
+                                ${formatNumber(currentData.rc.baseSales + val)}万円
+                            </td>
+                        `).join('')}
+                    </tr>
+                    <tr style="background: white;">
+                        <td style="font-weight: 600;">対前年増減</td>
+                        ${currentData.rc.variations.map((val, i) => {
+                            const currentSales = currentData.rc.baseSales + val;
+                            const diff = currentSales - referenceData.RC[i];
+                            const color = diff >= 0 ? '#059669' : '#dc2626';
+                            return `<td style="color: ${color}; font-weight: 600; text-align: center;">${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円</td>`;
+                        }).join('')}
+                    </tr>
+                    <tr style="background: #f3f4f6;">
+                        <td style="color: #6b7280;">参考</td>
+                        ${referenceData.RC.map(val => `<td style="color: #6b7280; text-align: center;">${formatNumber(val)}万円</td>`).join('')}
+                    </tr>
+                </tbody>
+            `;
+            table.innerHTML = html;
+        }
+
+        // RCD社事業部テーブル生成
+        function generateRCDTable() {
+            const table = document.getElementById('rcd-table');
+            let html = `
+                <thead>
+                    <tr style="background: #f7fafc;">
+                        <th style="width: 80px;">項目</th>
+                        ${months.map(month => `<th>${month}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background: white;">
+                        <td style="font-weight: 600; color: #3182ce;">仕入</td>
+                        ${currentData.rcd.purchases.map((val, i) => `
+                            <td>
+                                <input type="number" step="0.1" value="${val}" 
+                                       onchange="updateRCDPurchase(${i}, this.value)"
+                                       style="background: rgba(59, 130, 246, 0.1);">
+                                <div style="font-size: 0.75rem; color: #6b7280; text-align: center;">${val}本</div>
+                            </td>
+                        `).join('')}
+                    </tr>
+                    <tr style="background: #f0fff4; border-left: 4px solid #059669;">
+                        <td style="font-weight: 600; color: #059669;">売上</td>
+                        ${currentData.rcd.purchases.map(val => `
+                            <td style="color: #059669; font-weight: 600; text-align: center;">
+                                ${formatNumber(Math.round(val * 2000 * 1.03))}万円
+                            </td>
+                        `).join('')}
+                    </tr>
+                    <tr style="background: white;">
+                        <td style="font-weight: 600;">対前年増減</td>
+                        ${currentData.rcd.purchases.map((val, i) => {
+                            const currentSales = Math.round(val * 2000 * 1.03);
+                            const diff = currentSales - referenceData.RCD[i];
+                            const color = diff >= 0 ? '#059669' : '#dc2626';
+                            return `<td style="color: ${color}; font-weight: 600; text-align: center;">${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円</td>`;
+                        }).join('')}
+                    </tr>
+                    <tr style="background: #fffbeb; border-left: 4px solid #f59e0b;">
+                        <td style="font-weight: 600; color: #b45309;">手数料</td>
+                        ${currentData.rcd.fees.map((val, i) => `
+                            <td>
+                                <input type="number" min="0" max="10" value="${val}" 
+                                       onchange="updateRCDFee(${i}, this.value)"
+                                       style="background: rgba(245, 158, 11, 0.1);">
+                                <div style="font-size: 0.75rem; color: #6b7280; text-align: center;">${val}回</div>
+                                <div style="font-size: 0.75rem; color: #b45309; text-align: center;">
+                                    ${formatNumber(Math.round(val * 90.6))}万円
+                                </div>
+                            </td>
+                        `).join('')}
+                    </tr>
+                    <tr style="background: #f3f4f6;">
+                        <td style="color: #6b7280;">参考</td>
+                        ${referenceData.RCD.map(val => `<td style="color: #6b7280; text-align: center;">${formatNumber(val)}万円</td>`).join('')}
+                    </tr>
+                </tbody>
+            `;
+            table.innerHTML = html;
+        }
+
+        // 更新関数群
+        function updateSRStore(storeName, monthIndex, value) {
+            currentData.sr.stores[storeName][monthIndex] = parseInt(value) || 0;
+            calculateSR();
+            generateSRTable();
+        }
+
+        function updateWSales(monthIndex, value) {
+            currentData.w.sales[monthIndex] = parseInt(value) || 0;
+            calculateW();
+            generateWTable();
+        }
+
+        function updateRCVariation(monthIndex, value) {
+            currentData.rc.variations[monthIndex] = parseInt(value) || 0;
+            calculateRC();
+            generateRCTable();
+        }
+
+        function updateRCDPurchase(monthIndex, value) {
+            currentData.rcd.purchases[monthIndex] = parseFloat(value) || 0;
+            calculateRCD();
+            generateRCDTable();
+        }
+
+        function updateRCDFee(monthIndex, value) {
+            currentData.rcd.fees[monthIndex] = parseInt(value) || 0;
+            calculateRCD();
+            generateRCDTable();
+        }
+
+        // 計算関数群
+        function calculateSR() {
+            // 変数をデータに同期
+            currentData.sr.variables.commission = parseInt(document.getElementById('sr-commission').value) || 0;
+            currentData.sr.variables.bonus6 = parseInt(document.getElementById('sr-bonus6').value) || 0;
+            currentData.sr.variables.bonus12 = parseInt(document.getElementById('sr-bonus12').value) || 0;
+            currentData.sr.variables.advertising = parseInt(document.getElementById('sr-advertising').value) || 0;
+
+            const totals = months.map((_, i) => {
+                return Object.values(currentData.sr.stores).reduce((sum, store) => sum + store[i], 0);
+            });
+            const annual = totals.reduce((sum, val) => sum + val, 0);
+            const refTotal = referenceData.SR.reduce((sum, val) => sum + val, 0);
+            const diff = annual - refTotal;
+
+            document.getElementById('sr-annual').textContent = 
+                `年間合計: ${formatNumber(annual)}万円　前年増減: ${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円`;
+            
+            updateDashboard();
+        }
+
+        function calculateW() {
+            const annual = currentData.w.sales.reduce((sum, val) => sum + val, 0);
+            const refTotal = referenceData.W.reduce((sum, val) => sum + val, 0);
+            const diff = annual - refTotal;
+
+            document.getElementById('w-annual').textContent = 
+                `年間合計: ${formatNumber(annual)}万円　前年増減: ${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円`;
+            
+            updateDashboard();
+        }
+
+        function calculateRC() {
+            const totals = currentData.rc.variations.map(variation => currentData.rc.baseSales + variation);
+            const annual = totals.reduce((sum, val) => sum + val, 0);
+            const refTotal = referenceData.RC.reduce((sum, val) => sum + val, 0);
+            const diff = annual - refTotal;
+
+            document.getElementById('rc-annual').textContent = 
+                `年間合計: ${formatNumber(annual)}万円　前年増減: ${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円`;
+            
+            updateDashboard();
+        }
+
+        function calculateRCD() {
+            const totals = currentData.rcd.purchases.map(purchase => Math.round(purchase * 2000 * 1.03));
+            const annual = totals.reduce((sum, val) => sum + val, 0);
+            const refTotal = referenceData.RCD.reduce((sum, val) => sum + val, 0);
+            const diff = annual - refTotal;
+
+            document.getElementById('rcd-annual').textContent = 
+                `年間合計: ${formatNumber(annual)}万円　前年増減: ${diff >= 0 ? '+' : ''}${formatNumber(diff)}万円`;
+            
+            updateDashboard();
+        }
+
+        // プリセット関数群（修正版 - 参照データを正しく使用）
+        function applySRPreset(presetType) {
+            const storeNames = Object.keys(currentData.sr.stores);
+            storeNames.forEach(storeName => {
+                for (let i = 0; i < 12; i++) {
+                    switch(presetType) {
+                        case 'actual':
+                            // 参照データから対応する値を設定
+                            const storeIndex = storeNames.indexOf(storeName);
+                            const storeData = [
+                                [416, 397, 421, 502, 471, 544, 567, 476, 355, 408, 299, 346], // 清水店
+                                [369, 386, 600, 535, 285, 437, 351, 270, 369, 391, 256, 242], // 静岡店
+                                [284, 375, 508, 278, 394, 394, 377, 309, 248, 469, 448, 535], // 掛川店
+                                [328, 547, 723, 520, 528, 607, 574, 318, 714, 657, 700, 600], // 市野店
+                                [349, 719, 247, 433, 308, 265, 516, 311, 222, 293, 272, 379], // 佐鳴台店
+                                [490, 493, 427, 542, 558, 416, 622, 641, 496, 385, 253, 620]  // 広島店
+                            ];
+                            currentData.sr.stores[storeName][i] = storeData[storeIndex][i];
+                            break;
+                        case '50p':
+                            currentData.sr.stores[storeName][i] = currentData.sr.stores[storeName][i] + 50;
+                            break;
+                        case '100p':
+                            currentData.sr.stores[storeName][i] = currentData.sr.stores[storeName][i] + 100;
+                            break;
+                        case '150p':
+                            currentData.sr.stores[storeName][i] = currentData.sr.stores[storeName][i] + 150;
+                            break;
+                    }
+                }
+            });
+            calculateSR();
+            generateSRTable();
+        }
+
+        function applyWPreset(presetType) {
+            for (let i = 0; i < 12; i++) {
+                switch(presetType) {
+                    case 'actual':
+                        currentData.w.sales[i] = referenceData.W[i];
+                        break;
+                    case '200':
+                        currentData.w.sales[i] = referenceData.W[i] + 200;
+                        break;
+                    case '400':
+                        currentData.w.sales[i] = referenceData.W[i] + 400;
+                        break;
+                    case '600':
+                        currentData.w.sales[i] = referenceData.W[i] + 600;
+                        break;
+                }
+            }
+            calculateW();
+            generateWTable();
+        }
+
+        function applyRCPreset(presetType) {
+            switch(presetType) {
+                case 'standard':
+                    currentData.rc.variations = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                    currentData.rc.targetRate = 0;
+                    break;
+                case 'actual':
+                    // 参考データを基に過去実績パターンを設定
+                    currentData.rc.variations = referenceData.RC.map(ref => ref - currentData.rc.baseSales);
+                    currentData.rc.targetRate = 0;
+                    break;
+                case 'growth':
+                    currentData.rc.variations = referenceData.RC.map(ref => {
+                        const targetSales = Math.round(ref * 1.04);
+                        return targetSales - currentData.rc.baseSales;
+                    });
+                    currentData.rc.targetRate = 4;
+                    break;
+                case 'improvement':
+                    currentData.rc.variations = referenceData.RC.map(ref => {
+                        const targetSales = Math.round(ref * 1.07);
+                        return targetSales - currentData.rc.baseSales;
+                    });
+                    currentData.rc.targetRate = 7;
+                    break;
+            }
+            document.getElementById('rc-target-rate').value = currentData.rc.targetRate;
+            document.getElementById('rc-current-rate').textContent = currentData.rc.targetRate;
+            calculateRC();
+            generateRCTable();
+        }
+
+        function applyRCDPreset(presetType) {
+            switch(presetType) {
+                case 'zero':
+                    currentData.rcd.fees = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                    break;
+                case 'actual':
+                    currentData.rcd.purchases = referenceData.RCD.map(refSales => {
+                        const purchaseCount = refSales / (2000 * 1.03);
+                        return Math.floor(purchaseCount * 10) / 10;
+                    });
+                    currentData.rcd.fees = [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1];
+                    break;
+                case 'standard':
+                    currentData.rcd.purchases = [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8];
+                    currentData.rcd.fees = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+                    break;
+                case 'seven':
+                    currentData.rcd.purchases = [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7];
+                    currentData.rcd.fees = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+                    break;
+                case 'six':
+                    currentData.rcd.purchases = [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6];
+                    currentData.rcd.fees = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                    break;
+            }
+            calculateRCD();
+            generateRCDTable();
+        }
+
+        function applyRCTargetRate() {
+            const targetRate = parseFloat(document.getElementById('rc-target-rate').value) || 0;
+            currentData.rc.variations = referenceData.RC.map(ref => {
+                const targetSales = Math.round(ref * (1 + targetRate / 100));
+                return targetSales - currentData.rc.baseSales;
+            });
+            currentData.rc.targetRate = targetRate;
+            document.getElementById('rc-current-rate').textContent = targetRate;
+            calculateRC();
+            generateRCTable();
+        }
+
+        // ダッシュボード更新
+        function updateDashboard() {
+            // 各事業部の年間合計計算
+            const srTotal = months.map((_, i) => {
+                return Object.values(currentData.sr.stores).reduce((sum, store) => sum + store[i], 0);
+            }).reduce((sum, val) => sum + val, 0);
+
+            const wTotal = currentData.w.sales.reduce((sum, val) => sum + val, 0);
+
+            const rcTotal = currentData.rc.variations.map(variation => 
+                currentData.rc.baseSales + variation
+            ).reduce((sum, val) => sum + val, 0);
+
+            const rcdTotal = currentData.rcd.purchases.map(purchase => 
+                Math.round(purchase * 2000 * 1.03)
+            ).reduce((sum, val) => sum + val, 0);
+
+            const totalRevenue = srTotal + wTotal + rcTotal + rcdTotal;
+
+            // 前年増減計算
+            const refTotals = {
+                SR: referenceData.SR.reduce((sum, val) => sum + val, 0),
+                W: referenceData.W.reduce((sum, val) => sum + val, 0),
+                RC: referenceData.RC.reduce((sum, val) => sum + val, 0),
+                RCD: referenceData.RCD.reduce((sum, val) => sum + val, 0)
+            };
+            const totalRefRevenue = refTotals.SR + refTotals.W + refTotals.RC + refTotals.RCD;
+            const totalDiff = totalRevenue - totalRefRevenue;
+
+            // ダッシュボード更新
+            document.getElementById('total-revenue').textContent = formatNumber(totalRevenue) + '万円';
+            document.getElementById('sr-total').textContent = formatNumber(srTotal) + '万円';
+            document.getElementById('w-total').textContent = formatNumber(wTotal) + '万円';
+            document.getElementById('rc-total').textContent = formatNumber(rcTotal) + '万円';
+            document.getElementById('rcd-total').textContent = formatNumber(rcdTotal) + '万円';
+            document.getElementById('total-diff').textContent = 
+                (totalDiff >= 0 ? '+' : '') + formatNumber(totalDiff) + '万円';
+        }
+
+        // エクスポート機能
+        function exportToURL() {
+            const params = new URLSearchParams();
+            params.append('data', JSON.stringify(currentData));
+            const url = window.location.origin + window.location.pathname + '?' + params.toString();
+            
+            navigator.clipboard.writeText(url).then(() => {
+                alert('URLがクリップボードにコピーされました！');
+            });
+        }
+
+        function exportToJSON() {
+            const exportData = {
+                timestamp: new Date().toISOString(),
+                data: currentData,
+                summary: {
+                    totalRevenue: getCurrentTotalRevenue(),
+                    breakdown: getCurrentBreakdown()
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'pl_simulator_data.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function getCurrentTotalRevenue() {
+            const srTotal = months.map((_, i) => {
+                return Object.values(currentData.sr.stores).reduce((sum, store) => sum + store[i], 0);
+            }).reduce((sum, val) => sum + val, 0);
+
+            const wTotal = currentData.w.sales.reduce((sum, val) => sum + val, 0);
+            const rcTotal = currentData.rc.variations.map(variation => 
+                currentData.rc.baseSales + variation
+            ).reduce((sum, val) => sum + val, 0);
+            const rcdTotal = currentData.rcd.purchases.map(purchase => 
+                Math.round(purchase * 2000 * 1.03)
+            ).reduce((sum, val) => sum + val, 0);
+
+            return srTotal + wTotal + rcTotal + rcdTotal;
+        }
+
+        function getCurrentBreakdown() {
+            const srTotal = months.map((_, i) => {
+                return Object.values(currentData.sr.stores).reduce((sum, store) => sum + store[i], 0);
+            }).reduce((sum, val) => sum + val, 0);
+
+            return {
+                SR: srTotal,
+                W: currentData.w.sales.reduce((sum, val) => sum + val, 0),
+                RC: currentData.rc.variations.map(variation => 
+                    currentData.rc.baseSales + variation
+                ).reduce((sum, val) => sum + val, 0),
+                RCD: currentData.rcd.purchases.map(purchase => 
+                    Math.round(purchase * 2000 * 1.03)
+                ).reduce((sum, val) => sum + val, 0)
+            };
+        }
+
+        // 初期化
+        function initialize() {
+            generateSRTable();
+            generateWTable();
+            generateRCTable();
+            generateRCDTable();
+            calculateSR();
+            calculateW();
+            calculateRC();
+            calculateRCD();
+        }
+
+        // ページ読み込み時に初期化実行
+        window.onload = initialize;
+    </script>
+</body>
+</html>
